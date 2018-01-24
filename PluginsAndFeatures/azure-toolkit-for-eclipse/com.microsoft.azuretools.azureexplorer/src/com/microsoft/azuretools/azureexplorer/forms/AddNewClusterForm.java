@@ -11,10 +11,9 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.browser.IWebBrowser;
 
-import java.net.MalformedURLException;
 import java.net.URL;
 
 import com.microsoft.azure.hdinsight.common.ClusterManagerEx;
@@ -142,10 +141,12 @@ public class AddNewClusterForm extends AzureTitleAreaDialogWrapper {
         passwordField.setToolTipText("The password of the HDInsight cluster user provided.\n\n Press the F1 key or click the '?'(Help) button to get more details.");
         
         container.addHelpListener(new HelpListener() {
-            @Override public void helpRequested(HelpEvent e) { 
+            @Override public void helpRequested(HelpEvent e) {
                 try {
-                    PlatformUI.getWorkbench().getBrowserSupport().getExternalBrowser().openURL(new URL("https://go.microsoft.com/fwlink/?linkid=866472"));
-                } catch (PartInitException | MalformedURLException e1) {
+                    IWebBrowser webBrowser = PlatformUI.getWorkbench().getBrowserSupport().getExternalBrowser();
+                    if (webBrowser != null)
+                        webBrowser.openURL(new URL("https://go.microsoft.com/fwlink/?linkid=866472"));
+                } catch (Exception e1) {
                 }
             }
         });
