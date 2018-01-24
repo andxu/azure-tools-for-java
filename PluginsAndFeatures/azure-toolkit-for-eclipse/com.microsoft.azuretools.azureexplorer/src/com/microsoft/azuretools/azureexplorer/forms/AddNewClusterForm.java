@@ -1,15 +1,29 @@
 package com.microsoft.azuretools.azureexplorer.forms;
 
-import org.eclipse.jface.dialogs.TitleAreaDialog;
+import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Cursor;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Link;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.ToolBar;
+import org.eclipse.swt.widgets.ToolItem;
+import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.PlatformUI;
+
+import static org.eclipse.swt.events.SelectionListener.widgetSelectedAdapter;
+
+import java.net.MalformedURLException;
+import java.net.URL;
+
+import org.eclipse.jface.dialogs.IDialogConstants;
 
 import com.microsoft.azure.hdinsight.common.ClusterManagerEx;
 import com.microsoft.azure.hdinsight.sdk.cluster.HDInsightAdditionalClusterDetail;
@@ -58,12 +72,76 @@ public class AddNewClusterForm extends AzureTitleAreaDialogWrapper {
 		newShell.setText("Link New HDInsight Cluster");
 	}
 
+	// we cannot just override method 'helpPressed' since the method is defined as private in the parent class 'TrayDialog'
+	// so we disable the default help button and mock a button with different usage
+	protected void helpPressed() {
+		try {
+			PlatformUI.getWorkbench().getBrowserSupport().getExternalBrowser().openURL(new URL("https://go.microsoft.com/fwlink/?linkid=866472"));
+		} catch (PartInitException | MalformedURLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	private ToolBar createHelpImageButton(Composite parent, Image image) {
+        ToolBar toolBar = new ToolBar(parent, SWT.FLAT | SWT.NO_FOCUS);
+        ((GridLayout) parent.getLayout()).numColumns++;
+		toolBar.setLayoutData(new GridData(GridData.HORIZONTAL_ALIGN_CENTER));
+		final Cursor cursor = new Cursor(parent.getDisplay(), SWT.CURSOR_HAND);
+		toolBar.setCursor(cursor);
+		toolBar.addDisposeListener(e -> cursor.dispose());
+		ToolItem fHelpButton = new ToolItem(toolBar, SWT.CHECK);
+		fHelpButton.setImage(image);
+		fHelpButton.setToolTipText(JFaceResources.getString("helpToolTip")); //$NON-NLS-1$
+		fHelpButton.addSelectionListener(widgetSelectedAdapter(e -> helpPressed()));
+		return toolBar;
+	}
+	
+	private Link createHelpLink(Composite parent) {
+		Link link = new Link(parent, SWT.WRAP | SWT.NO_FOCUS);
+        ((GridLayout) parent.getLayout()).numColumns++;
+		link.setLayoutData(new GridData(GridData.HORIZONTAL_ALIGN_CENTER));
+		link.setText("<a>"+IDialogConstants.HELP_LABEL+"</a>"); //$NON-NLS-1$ //$NON-NLS-2$
+		link.setToolTipText(IDialogConstants.HELP_LABEL);
+		link.addSelectionListener(widgetSelectedAdapter(e -> helpPressed()));
+		return link;
+	}
+	
+	@Override
+    protected Control createHelpControl(Composite parent) {
+		Image helpImage = JFaceResources.getImage(DLG_IMG_HELP);
+		if (helpImage != null) {
+			return createHelpImageButton(parent, helpImage);
+		}
+		return createHelpLink(parent);
+    }
+
+	@Override
+	protected Control createButtonBar(Composite parent) {
+    	Composite composite = new Composite(parent, SWT.NONE);
+    	GridLayout layout = new GridLayout();
+    	layout.marginWidth = 0;
+    	layout.marginHeight = 0;
+    	layout.horizontalSpacing = 0;
+    	composite.setLayout(layout);
+    	composite.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, false, false));
+    	composite.setFont(parent.getFont());
+
+    	// mock a new help button
+        Control helpControl = createHelpControl(composite);
+        ((GridData) helpControl.getLayoutData()).horizontalIndent = convertHorizontalDLUsToPixels(IDialogConstants.HORIZONTAL_MARGIN);
+        Control buttonSection = super.createButtonBar(composite);
+        ((GridData) buttonSection.getLayoutData()).grabExcessHorizontalSpace = true;
+        return composite;
+	}
+	
 	@Override
 	protected Control createDialogArea(Composite parent) {
 		setTitle("Link New HDInsight Cluster");
 		setMessage("Please enter HDInsight Cluster details");
+		// disable the default help button
 		setHelpAvailable(false);
-
+		
 		Composite container = new Composite(parent, SWT.NONE);
 		GridLayout gridLayout = new GridLayout();
 		gridLayout.numColumns = 2;
@@ -84,6 +162,7 @@ public class AddNewClusterForm extends AzureTitleAreaDialogWrapper {
 		gridData.horizontalAlignment = SWT.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		clusterNameField.setLayoutData(gridData);
+		clusterNameField.setToolTipText("The HDInsight cluster name, such as 'mycluster' of cluster URL 'mycluster.azurehdinsight.net'.\n\n Click the '?'(Help) button to get more details.");
 
 		Label storageNameLabel = new Label(container, SWT.LEFT);
 		storageNameLabel.setText("Storage Name:");
@@ -95,6 +174,7 @@ public class AddNewClusterForm extends AzureTitleAreaDialogWrapper {
 		gridData.horizontalAlignment = SWT.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		storageNameField.setLayoutData(gridData);
+		storageNameField.setToolTipText("The default storage account of the HDInsight cluster, which can be found from HDInsight cluster properties of Azure portal.\n\n Click the '?'(Help) button to get more details");
 
 		Label storageKeyLabel = new Label(container, SWT.LEFT);
 		storageKeyLabel.setText("Storage Key:");
@@ -106,6 +186,7 @@ public class AddNewClusterForm extends AzureTitleAreaDialogWrapper {
 		gridData.horizontalAlignment = SWT.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		storageKeyField.setLayoutData(gridData);
+		storageKeyField.setToolTipText("The storage key of the default storage account, which can be found from HDInsight cluster storage accounts of Azure portal.\n\n Click the '?'(Help) button to get more details.");
 
 		Label userNameLabel = new Label(container, SWT.LEFT);
 		userNameLabel.setText("User Name:");
@@ -117,7 +198,8 @@ public class AddNewClusterForm extends AzureTitleAreaDialogWrapper {
 		gridData.horizontalAlignment = SWT.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		userNameField.setLayoutData(gridData);
-
+		userNameField.setToolTipText("The user name of the HDInsight cluster.\n\n Click the '?'(Help) button to get more details.");
+		
 		Label passwordLabel = new Label(container, SWT.LEFT);
 		passwordLabel.setText("Password:");
 		gridData = new GridData();
@@ -128,7 +210,8 @@ public class AddNewClusterForm extends AzureTitleAreaDialogWrapper {
 		gridData.horizontalAlignment = SWT.FILL;
 		gridData.grabExcessHorizontalSpace = true;
 		passwordField.setLayoutData(gridData);
-
+		passwordField.setToolTipText("The password of the HDInsight cluster user provided.\n\n Click the '?'(Help) button to get more details.");
+		
 		return super.createDialogArea(parent);
 	}
 
@@ -214,4 +297,5 @@ public class AddNewClusterForm extends AzureTitleAreaDialogWrapper {
 		});
 		PluginUtil.showBusy(false, getShell());
 	}
+	
 }
