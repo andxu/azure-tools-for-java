@@ -15,6 +15,8 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.browser.IWebBrowser;
 
 import java.net.URL;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.microsoft.azure.hdinsight.common.ClusterManagerEx;
 import com.microsoft.azure.hdinsight.sdk.cluster.HDInsightAdditionalClusterDetail;
@@ -31,6 +33,7 @@ import com.microsoft.azuretools.telemetry.AppInsightsClient;
 
 public class AddNewClusterForm extends AzureTitleAreaDialogWrapper {
 
+    private static final Logger log = Logger.getLogger(AddNewClusterForm.class.getName());
     private String clusterName;
     private String userName;
     private String password;
@@ -147,6 +150,7 @@ public class AddNewClusterForm extends AzureTitleAreaDialogWrapper {
                     if (webBrowser != null)
                         webBrowser.openURL(new URL("https://go.microsoft.com/fwlink/?linkid=866472"));
                 } catch (Exception e1) {
+                    log.log(Level.WARNING, e1.getMessage());
                 }
             }
         });
