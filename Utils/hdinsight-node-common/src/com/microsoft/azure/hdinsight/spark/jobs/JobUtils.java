@@ -35,6 +35,7 @@ import com.microsoft.azure.hdinsight.common.MessageInfoType;
 import com.microsoft.azure.hdinsight.common.StreamUtil;
 import com.microsoft.azure.hdinsight.sdk.cluster.EmulatorClusterDetail;
 import com.microsoft.azure.hdinsight.sdk.cluster.IClusterDetail;
+import com.microsoft.azure.hdinsight.sdk.common.AuthenticationException;
 import com.microsoft.azure.hdinsight.sdk.common.HDIException;
 import com.microsoft.azure.hdinsight.sdk.rest.yarn.rm.App;
 import com.microsoft.azure.hdinsight.sdk.rest.yarn.rm.ApplicationMasterLogs;
@@ -588,5 +589,23 @@ public class JobUtils {
 
     public static Cache getGlobalCache() {
         return globalCache;
+    }
+
+    public static AbstractMap.SimpleImmutableEntry<Integer, Map<String, List<String>>>
+    authenticate(IClusterDetail clusterDetail) throws HDIException, IOException {
+        SparkBatchSubmission submission = SparkBatchSubmission.getInstance();
+        submission.setCredentialsProvider(clusterDetail.getHttpUserName(), clusterDetail.getHttpPassword());
+        String livyUrl = URI.create(ClusterManagerEx.getInstance().getClusterConnectionString(clusterDetail.getName()))
+                .resolve("/livy/")
+                .toString();
+        com.microsoft.azure.hdinsight.sdk.common.HttpResponse response = submission.getHttpResponseViaHead(livyUrl);
+
+        int statusCode = response.getCode();
+
+        if (statusCode >= 200 && statusCode < 300) {
+            return new AbstractMap.SimpleImmutableEntry<>(statusCode, response.getHeaders());
+        }
+
+        throw new AuthenticationException("Authentication failed", statusCode);
     }
 }

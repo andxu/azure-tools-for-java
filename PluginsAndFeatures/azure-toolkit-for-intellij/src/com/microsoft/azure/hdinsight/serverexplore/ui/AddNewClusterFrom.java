@@ -27,23 +27,29 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
-import com.intellij.openapi.ui.popup.IconButton;
 import com.microsoft.azure.hdinsight.common.ClusterManagerEx;
 import com.microsoft.azure.hdinsight.sdk.cluster.HDInsightAdditionalClusterDetail;
-import com.microsoft.azure.hdinsight.sdk.common.HDIException;
+import com.microsoft.azure.hdinsight.sdk.common.AuthenticationException;
 import com.microsoft.azure.hdinsight.sdk.storage.HDStorageAccount;
-import com.microsoft.azure.hdinsight.serverexplore.AddHDInsightAdditionalClusterImpl;
 import com.microsoft.azure.hdinsight.serverexplore.hdinsightnode.HDInsightRootModule;
+import com.microsoft.azure.hdinsight.spark.jobs.JobUtils;
 import com.microsoft.azuretools.azurecommons.helpers.AzureCmdException;
 import com.microsoft.azuretools.azurecommons.helpers.StringHelper;
 import com.microsoft.azuretools.telemetry.AppInsightsClient;
 import com.microsoft.intellij.hdinsight.messages.HDInsightBundle;
+import com.microsoft.tooling.msservices.helpers.azure.sdk.StorageClientSDKManager;
+import com.microsoft.tooling.msservices.model.storage.BlobContainer;
+import com.microsoft.tooling.msservices.model.storage.ClientStorageAccount;
+import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 public class AddNewClusterFrom extends DialogWrapper {
@@ -55,6 +61,7 @@ public class AddNewClusterFrom extends DialogWrapper {
 
     private String storageName;
     private String storageKey;
+    private String storageContainer;
 
     private HDStorageAccount storageAccount;
 
@@ -73,6 +80,8 @@ public class AddNewClusterFrom extends DialogWrapper {
     private JLabel storageKeyLabel;
     private JLabel userNameLabel;
     private JLabel passwordLabel;
+    private JComboBox<BlobContainer> containersComboBox;
+    private JLabel storageContainerLabel;
 
     private HDInsightRootModule hdInsightModule;
 
@@ -93,6 +102,47 @@ public class AddNewClusterFrom extends DialogWrapper {
         errorMessageField.setBorder(BorderFactory.createEmptyBorder());
 
         this.setModal(true);
+
+        storageKeyTextField.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusLost(FocusEvent e) {
+                super.focusLost(e);
+
+                if (StringUtils.isNotBlank(storageNameField.getText()) && StringUtils.isNotBlank(storageKeyTextField.getText())) {
+                    ClientStorageAccount storageAccount = new ClientStorageAccount(storageNameField.getText());
+                    storageAccount.setPrimaryKey(storageKeyTextField.getText());
+
+                    refreshContainers(storageAccount);
+                }
+            }
+        });
+
+        storageNameField.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusLost(FocusEvent e) {
+                super.focusLost(e);
+
+                if (StringUtils.isNotBlank(storageNameField.getText()) && StringUtils.isNotBlank(storageKeyTextField.getText())) {
+                    ClientStorageAccount storageAccount = new ClientStorageAccount(storageNameField.getText());
+                    storageAccount.setPrimaryKey(storageKeyTextField.getText());
+
+                    refreshContainers(storageAccount);
+                }
+            }
+        });
+    }
+
+    private void refreshContainers(@NotNull ClientStorageAccount storageAccount) {
+        try {
+            containersComboBox.removeAllItems();
+
+            StorageClientSDKManager.getManager().getBlobContainers(storageAccount.getConnectionString())
+                    .forEach(containersComboBox::addItem);
+
+            containersComboBox.setMaximumRowCount(6);
+        } catch (AzureCmdException e) {
+            containersComboBox.removeAllItems();
+        }
     }
 
     private class HelpAction extends AbstractAction {
@@ -132,6 +182,7 @@ public class AddNewClusterFrom extends DialogWrapper {
                         clusterNameLabel,
                         storageNameLabel,
                         storageKeyLabel,
+                        storageContainerLabel,
                         userNameLabel,
                         passwordLabel);
 
@@ -157,19 +208,41 @@ public class AddNewClusterFrom extends DialogWrapper {
                         isCarryOnNextStep = false;
                     }
                 }
+
+                if (containersComboBox.getSelectedItem() == null) {
+                    errorMessage = "The storage container isn't selected";
+                    isCarryOnNextStep = false;
+                } else {
+                    storageContainer = ((BlobContainer) containersComboBox.getSelectedItem()).getName();
+                }
             }
 
             if (isCarryOnNextStep) {
                 getStorageAccount();
+
+                if (storageAccount == null) {
+                    isCarryOnNextStep = false;
+                } else {
+                    HDInsightAdditionalClusterDetail hdInsightAdditionalClusterDetail = new HDInsightAdditionalClusterDetail(clusterName, userName, password, storageAccount);
+                    try {
+                        JobUtils.authenticate(hdInsightAdditionalClusterDetail);
+
+                        ClusterManagerEx.getInstance().addHDInsightAdditionalCluster(hdInsightAdditionalClusterDetail);
+                        hdInsightModule.refreshWithoutAsync();
+                    } catch (AuthenticationException authErr) {
+                        isCarryOnNextStep = false;
+                        errorMessage = "Authentication Error: " + Optional.ofNullable(authErr.getMessage())
+                                                               .filter(msg -> !msg.isEmpty())
+                                                               .orElse("Wrong username/password") +
+                                " (" + authErr.getErrorCode() + ")";
+                    } catch (Exception ex) {
+                        isCarryOnNextStep = false;
+                        errorMessage = "Authentication Error: " + ex.getMessage();
+                    }
+                }
             }
 
             if (isCarryOnNextStep) {
-                if (storageAccount != null) {
-                    HDInsightAdditionalClusterDetail hdInsightAdditionalClusterDetail = new HDInsightAdditionalClusterDetail(clusterName, userName, password, storageAccount);
-                    ClusterManagerEx.getInstance().addHDInsightAdditionalCluster(hdInsightAdditionalClusterDetail);
-                    hdInsightModule.refreshWithoutAsync();
-                }
-
                 super.doOKAction();
             } else {
                 errorMessageField.setText(errorMessage);
@@ -190,17 +263,10 @@ public class AddNewClusterFrom extends DialogWrapper {
     private void getStorageAccount() {
         addNewClusterPanel.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
-        ApplicationManager.getApplication().invokeAndWait(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    storageAccount = AddHDInsightAdditionalClusterImpl.getStorageAccount(clusterName, storageName, storageKey, userName, password);
-                    isCarryOnNextStep = true;
-                } catch (AzureCmdException | HDIException e) {
-                    isCarryOnNextStep = false;
-                    errorMessage = e.getMessage();
-                }
-            }
+        ApplicationManager.getApplication().invokeAndWait(() -> {
+            storageAccount = new HDStorageAccount(
+                    null, ClusterManagerEx.getInstance().getBlobFullName(storageName), storageKey, false, storageContainer);
+            isCarryOnNextStep = true;
         }, ModalityState.NON_MODAL);
 
         addNewClusterPanel.setCursor(Cursor.getDefaultCursor());
