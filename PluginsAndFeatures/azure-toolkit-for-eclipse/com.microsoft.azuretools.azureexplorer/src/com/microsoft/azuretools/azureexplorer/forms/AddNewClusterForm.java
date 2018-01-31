@@ -72,7 +72,9 @@ public class AddNewClusterForm extends AzureTitleAreaDialogWrapper {
     @Override
     protected void configureShell(Shell newShell) {
         super.configureShell(newShell);
+        newShell.setSize(439, 415);
         newShell.setText("Link New HDInsight Cluster");
+
     }
 
     private void refreshContainers(@NotNull ClientStorageAccount storageAccount) {
@@ -84,7 +86,7 @@ public class AddNewClusterForm extends AzureTitleAreaDialogWrapper {
 			
 			// not find setMaximumRowCount(*) method in SWT
 		} catch (AzureCmdException e) {
-			containersComboBox.removeAll();
+			setErrorMessage(e.getMessage());
 		}
     }
     
@@ -147,10 +149,11 @@ public class AddNewClusterForm extends AzureTitleAreaDialogWrapper {
         gridData = new GridData();
         gridData.horizontalAlignment = SWT.RIGHT;
         storageKeyLabel.setLayoutData(gridData);
-        storageKeyField = new Text(clusterStorageGroup, SWT.BORDER);
+        storageKeyField = new Text(clusterStorageGroup, SWT.BORDER | SWT.WRAP);
         gridData = new GridData();
         gridData.horizontalAlignment = SWT.FILL;
         gridData.grabExcessHorizontalSpace = true;
+        gridData.heightHint = 4 * storageKeyField.getLineHeight();
         storageKeyField.setLayoutData(gridData);
         storageKeyField.setToolTipText("The storage key of the default storage account, which can be found from HDInsight cluster storage accounts of Azure portal.\n\n Press the F1 key or click the '?'(Help) button to get more details.");
 
