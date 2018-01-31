@@ -8,10 +8,12 @@ import org.eclipse.swt.events.HelpEvent;
 import org.eclipse.swt.events.HelpListener;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
@@ -106,6 +108,7 @@ public class AddNewClusterForm extends AzureTitleAreaDialogWrapper {
         Label clusterNameLabel = new Label(container, SWT.LEFT);
         clusterNameLabel.setText("Cluster Name:");
         gridData = new GridData();
+        gridData.horizontalIndent = 30;
         gridData.horizontalAlignment = SWT.RIGHT;
         clusterNameLabel.setLayoutData(gridData);
         clusterNameField = new Text(container, SWT.BORDER);
@@ -115,24 +118,36 @@ public class AddNewClusterForm extends AzureTitleAreaDialogWrapper {
         clusterNameField.setLayoutData(gridData);
         clusterNameField.setToolTipText("The HDInsight cluster name, such as 'mycluster' of cluster URL 'mycluster.azurehdinsight.net'.\n\n Press the F1 key or click the '?'(Help) button to get more details.");
 
-        Label storageNameLabel = new Label(container, SWT.LEFT);
-        storageNameLabel.setText("Storage Name:");
+        Group clusterStorageGroup = new Group(container, SWT.NONE);
+        clusterStorageGroup.setText("The Cluster Storage Information");
+        gridLayout = new GridLayout();
+        gridLayout.numColumns = 2;
+        clusterStorageGroup.setLayout(gridLayout);
+        gridData = new GridData();
+        gridData.horizontalSpan = 2;
+        gridData.widthHint = 350;
+        gridData.horizontalAlignment = SWT.FILL;
+        gridData.grabExcessHorizontalSpace = true;
+        clusterStorageGroup.setLayoutData(gridData);
+
+        Label storageNameLabel = new Label(clusterStorageGroup, SWT.LEFT);
+        storageNameLabel.setText("Storage Account:");
         gridData = new GridData();
         gridData.horizontalAlignment = SWT.RIGHT;
         storageNameLabel.setLayoutData(gridData);
-        storageNameField = new Text(container, SWT.BORDER);
+        storageNameField = new Text(clusterStorageGroup, SWT.BORDER);
         gridData = new GridData();
         gridData.horizontalAlignment = SWT.FILL;
         gridData.grabExcessHorizontalSpace = true;
         storageNameField.setLayoutData(gridData);
         storageNameField.setToolTipText("The default storage account of the HDInsight cluster, which can be found from HDInsight cluster properties of Azure portal.\n\n Press the F1 key or click the '?'(Help) button to get more details");
-        
-        Label storageKeyLabel = new Label(container, SWT.LEFT);
+
+        Label storageKeyLabel = new Label(clusterStorageGroup, SWT.LEFT);
         storageKeyLabel.setText("Storage Key:");
         gridData = new GridData();
         gridData.horizontalAlignment = SWT.RIGHT;
         storageKeyLabel.setLayoutData(gridData);
-        storageKeyField = new Text(container, SWT.BORDER);
+        storageKeyField = new Text(clusterStorageGroup, SWT.BORDER);
         gridData = new GridData();
         gridData.horizontalAlignment = SWT.FILL;
         gridData.grabExcessHorizontalSpace = true;
@@ -167,35 +182,49 @@ public class AddNewClusterForm extends AzureTitleAreaDialogWrapper {
         	}
         });
         
-        Label storageContainerLabel = new Label(container, SWT.LEFT);
+        Label storageContainerLabel = new Label(clusterStorageGroup, SWT.LEFT);
         storageContainerLabel.setText("Storage Container:");
         gridData = new GridData();
         gridData.horizontalAlignment = SWT.RIGHT;
         storageContainerLabel.setLayoutData(gridData);
-        containersComboBox = new Combo(container, SWT.DROP_DOWN | SWT.BORDER);
+        containersComboBox = new Combo(clusterStorageGroup, SWT.DROP_DOWN | SWT.BORDER);
         gridData = new GridData();
         gridData.horizontalAlignment = SWT.FILL;
         gridData.grabExcessHorizontalSpace = true;
         containersComboBox.setLayoutData(gridData);
         
-        Label userNameLabel = new Label(container, SWT.LEFT);
+        Group clusterAccountGroup = new Group(container, SWT.NONE);
+        clusterAccountGroup.setText("The Cluster Account");
+        gridLayout = new GridLayout();
+        gridLayout.numColumns = 2;
+        clusterAccountGroup.setLayout(gridLayout);
+        gridData = new GridData();
+        gridData.horizontalSpan = 2;
+        gridData.widthHint = 350;
+        gridData.horizontalAlignment = SWT.FILL;
+        gridData.grabExcessHorizontalSpace = true;
+        clusterAccountGroup.setLayoutData(gridData);
+
+        Label userNameLabel = new Label(clusterAccountGroup, SWT.LEFT);
         userNameLabel.setText("User Name:");
         gridData = new GridData();
+        gridData.horizontalIndent = 38;
         gridData.horizontalAlignment = SWT.RIGHT;
         userNameLabel.setLayoutData(gridData);
-        userNameField = new Text(container, SWT.BORDER);
+        userNameField = new Text(clusterAccountGroup, SWT.BORDER);
         gridData = new GridData();
         gridData.horizontalAlignment = SWT.FILL;
         gridData.grabExcessHorizontalSpace = true;
         userNameField.setLayoutData(gridData);
         userNameField.setToolTipText("The user name of the HDInsight cluster.\n\n Press the F1 key or click the '?'(Help) button to get more details.");
         
-        Label passwordLabel = new Label(container, SWT.LEFT);
+        Label passwordLabel = new Label(clusterAccountGroup, SWT.LEFT);
         passwordLabel.setText("Password:");
         gridData = new GridData();
+        gridData.horizontalIndent = 38;
         gridData.horizontalAlignment = SWT.RIGHT;
         passwordLabel.setLayoutData(gridData);
-        passwordField = new Text(container, SWT.PASSWORD | SWT.BORDER);
+        passwordField = new Text(clusterAccountGroup, SWT.PASSWORD | SWT.BORDER);
         gridData = new GridData();
         gridData.horizontalAlignment = SWT.FILL;
         gridData.grabExcessHorizontalSpace = true;
