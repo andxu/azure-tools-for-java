@@ -8,7 +8,6 @@ import org.eclipse.swt.events.HelpEvent;
 import org.eclipse.swt.events.HelpListener;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -21,12 +20,12 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.browser.IWebBrowser;
 
 import java.net.URL;
+import java.util.Optional;
 
 import com.microsoft.azure.hdinsight.common.ClusterManagerEx;
 import com.microsoft.azure.hdinsight.sdk.cluster.HDInsightAdditionalClusterDetail;
-import com.microsoft.azure.hdinsight.sdk.common.HDIException;
+import com.microsoft.azure.hdinsight.sdk.common.AuthenticationException;
 import com.microsoft.azure.hdinsight.sdk.storage.HDStorageAccount;
-import com.microsoft.azure.hdinsight.serverexplore.AddHDInsightAdditionalClusterImpl;
 import com.microsoft.azure.hdinsight.serverexplore.hdinsightnode.HDInsightRootModule;
 import com.microsoft.azure.hdinsight.spark.jobs.JobUtils;
 import com.microsoft.azuretools.azurecommons.helpers.AzureCmdException;
@@ -308,11 +307,18 @@ public class AddNewClusterForm extends AzureTitleAreaDialogWrapper {
                     try {
                     	JobUtils.authenticate(hdInsightAdditionalClusterDetail);
                         
-                    	ClusterManagerEx.getInstance().addHDInsightAdditionalCluster(hdInsightAdditionalClusterDetail);
+                        ClusterManagerEx.getInstance().addHDInsightAdditionalCluster(hdInsightAdditionalClusterDetail);
                         hdInsightModule.refreshWithoutAsync();
-                    } catch (Exception ignore) {
-                    	isCarryOnNextStep = false;
-                    	setErrorMessage("Wrong username/password to log in");
+                    } catch (AuthenticationException authErr) {
+                        isCarryOnNextStep = false;
+                        String errorMessage = "Authentication Error: " + Optional.ofNullable(authErr.getMessage())
+                                                                        .filter(msg -> !msg.isEmpty())
+                                                                        .orElse("Wrong username/password")
+                                                                + " (" + authErr.getErrorCode() + ")";
+                        setErrorMessage(errorMessage);
+                    } catch (Exception ex) {
+                        isCarryOnNextStep = false;
+                        setErrorMessage("Authentication Error: " + ex.getMessage());
                     }
                 }
             }
