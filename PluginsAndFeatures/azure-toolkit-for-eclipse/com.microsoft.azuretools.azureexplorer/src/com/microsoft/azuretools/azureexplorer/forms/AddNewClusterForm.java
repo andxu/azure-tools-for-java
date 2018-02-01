@@ -266,7 +266,7 @@ public class AddNewClusterForm extends AzureTitleAreaDialogWrapper {
             if (StringHelper.isNullOrWhiteSpace(clusterNameOrUrl) || StringHelper.isNullOrWhiteSpace(storageName)
                     || StringHelper.isNullOrWhiteSpace(storageKey) || StringHelper.isNullOrWhiteSpace(userName)
                     || StringHelper.isNullOrWhiteSpace(password)) {
-                setErrorMessage("Cluster Name, Storage Key, User Name, or Password shouldn't be empty");
+                setErrorMessage("Cluster Name, Storage Name, Storage Key, User Name, or Password shouldn't be empty");
                 isCarryOnNextStep = false;
             } else {
                 clusterName = getClusterName(clusterNameOrUrl);
