@@ -35,4 +35,15 @@ public enum StatementState {
     ERROR,          // Statement failed
     CANCELLING,     // Statement is being cancelling
     CANCELLED       // Statement is cancelled
+    ;
+    
+    /**
+     * To convert the string to StatementState type with case insensitive
+     * @param state Statement state string
+     * @return statementState parsed
+     * @throws IllegalArgumentException for no enum value matched
+     */
+    static public StatementState parse(String state) {
+        return StatementState.valueOf(state.trim().toUpperCase());
+    }
 }
