@@ -23,14 +23,16 @@
 package com.microsoft.azure.hdinsight.sdk.rest.livy.interactive;
 
 /**
+ * StatementState represents the state of an execution statement.
+ *
  * Based on Apache Livy, v0.4.0-incubating, refer to http://livy.incubator.apache.org./docs/0.4.0-incubating/rest-api.html
  */
 
 public enum StatementState {
-    waiting,        // Statement is enqueued but execution hasn't started
-    running,        // Statement is currently running
-    available,      // Statement has a response ready
-    error,          // Statement failed
-    cancelling,     // Statement is being cancelling
-    cancelled       // Statement is cancelled
+    WAITING,        // Statement is enqueued but execution hasn't started
+    RUNNING,        // Statement is currently running
+    AVAILABLE,      // Statement has a response ready
+    ERROR,          // Statement failed
+    CANCELLING,     // Statement is being cancelling
+    CANCELLED       // Statement is cancelled
 }

@@ -38,31 +38,15 @@ public class Statement {
         return this.id;
     }
 
-    public void setId(int id) {
-        this.id = id;
-    }
-
     public String getCode() {
         return this.code;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
     }
 
     public StatementState getState() {
         return state;
     }
 
-    public void setState(StatementState state) {
-        this.state = state;
-    }
-
     public StatementOutput getOutput() {
         return output;
-    }
-
-    public void setOutput(StatementOutput output) {
-        this.output = output;
     }
 }
