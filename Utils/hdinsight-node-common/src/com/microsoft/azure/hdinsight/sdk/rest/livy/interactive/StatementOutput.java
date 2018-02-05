@@ -33,8 +33,8 @@ import java.util.Map;
 public class StatementOutput {
     private String              status;             // Execution status
     private int                 execution_count;    // A monotonically increasing number
-    private Map<String, String> data;               // Statement output. An object mapping a mime type to the result
-                                                    // . If the mime type is ``application/json``, the value is a
+    private Map<String, String> data;               // Statement output. An object mapping a mime type to the result.
+                                                    // If the mime type is ``application/json``, the value is a
                                                     // JSON value
 
     public String getStatus() {
