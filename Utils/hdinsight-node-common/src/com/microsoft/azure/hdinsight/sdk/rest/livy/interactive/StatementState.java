@@ -36,7 +36,7 @@ public enum StatementState {
     CANCELLING,     // Statement is being cancelling
     CANCELLED       // Statement is cancelled
     ;
-    
+
     /**
      * To convert the string to StatementState type with case insensitive
      * @param state Statement state string

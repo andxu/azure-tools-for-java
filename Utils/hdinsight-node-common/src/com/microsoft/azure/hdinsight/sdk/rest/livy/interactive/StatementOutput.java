@@ -43,7 +43,7 @@ public class StatementOutput {
         return execution_count;
     }
 
-    public Object getData() {
+    public Map<String, String> getData() {
         return data;
     }
 }
