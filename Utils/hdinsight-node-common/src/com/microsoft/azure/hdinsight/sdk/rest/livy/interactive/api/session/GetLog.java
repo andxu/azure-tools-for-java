@@ -53,12 +53,4 @@ public class GetLog implements IConvertible {
     public int getSize() {
         return size;
     }
-
-    public void setFrom(int from) {
-        this.from = from;
-    }
-
-    public void setSize(int size) {
-        this.size = size;
-    }
 }
