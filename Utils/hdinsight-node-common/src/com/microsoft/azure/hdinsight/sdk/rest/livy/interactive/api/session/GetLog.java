@@ -25,7 +25,7 @@ package com.microsoft.azure.hdinsight.sdk.rest.livy.interactive.api.session;
 import com.microsoft.azure.hdinsight.sdk.rest.IConvertible;
 
 /**
- * Runs a statement in a session.
+ * Get the log lines from this session.
  *
  * Based on Apache Livy, v0.4.0-incubating, refer to http://livy.incubator.apache.org./docs/0.4.0-incubating/rest-api.html
  *
@@ -33,20 +33,32 @@ import com.microsoft.azure.hdinsight.sdk.rest.IConvertible;
  *   http://<livy base>/sessions
  *
  * HTTP Operations Supported
- *   POST
+ *   GET
  *
  * Query Parameters Supported
  *   None
+ *
+ * Response Type
+ *   @see GetLogResponse
  */
 
-public class PostStatements implements IConvertible {
-    private String code;    // The code to execute
+public class GetLog implements IConvertible {
+    private int from;   // Offset
+    private int size;   // Max number of log lines to return
 
-    public String getCode() {
-        return code;
+    public int getFrom() {
+        return from;
     }
 
-    public void setCode(String code) {
-        this.code = code;
+    public int getSize() {
+        return size;
+    }
+
+    public void setFrom(int from) {
+        this.from = from;
+    }
+
+    public void setSize(int size) {
+        this.size = size;
     }
 }

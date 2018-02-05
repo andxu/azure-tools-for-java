@@ -22,10 +22,8 @@
 
 package com.microsoft.azure.hdinsight.sdk.rest.livy.interactive.api.session;
 
-import com.microsoft.azure.hdinsight.sdk.rest.IConvertible;
-
 /**
- * Runs a statement in a session.
+ * Returns the state of session.
  *
  * Based on Apache Livy, v0.4.0-incubating, refer to http://livy.incubator.apache.org./docs/0.4.0-incubating/rest-api.html
  *
@@ -33,20 +31,21 @@ import com.microsoft.azure.hdinsight.sdk.rest.IConvertible;
  *   http://<livy base>/sessions
  *
  * HTTP Operations Supported
- *   POST
+ *   GET
  *
  * Query Parameters Supported
  *   None
  */
 
-public class PostStatements implements IConvertible {
-    private String code;    // The code to execute
+public class GetStateResponse {
+    private int     id;     // Session id
+    private String  state;  // The current state of session
 
-    public String getCode() {
-        return code;
+    public int getId() {
+        return id;
     }
 
-    public void setCode(String code) {
-        this.code = code;
+    public String getState() {
+        return state;
     }
 }

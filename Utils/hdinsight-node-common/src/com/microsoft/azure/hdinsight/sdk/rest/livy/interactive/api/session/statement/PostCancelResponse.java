@@ -20,12 +20,10 @@
  * SOFTWARE.
  */
 
-package com.microsoft.azure.hdinsight.sdk.rest.livy.interactive.api.session;
-
-import com.microsoft.azure.hdinsight.sdk.rest.IConvertible;
+package com.microsoft.azure.hdinsight.sdk.rest.livy.interactive.api.session.statement;
 
 /**
- * Runs a statement in a session.
+ * Cancel the specified statement in this session.
  *
  * Based on Apache Livy, v0.4.0-incubating, refer to http://livy.incubator.apache.org./docs/0.4.0-incubating/rest-api.html
  *
@@ -39,14 +37,10 @@ import com.microsoft.azure.hdinsight.sdk.rest.IConvertible;
  *   None
  */
 
-public class PostStatements implements IConvertible {
-    private String code;    // The code to execute
+public class PostCancelResponse {
+    private String msg;     // is always "cancelled"
 
-    public String getCode() {
-        return code;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
+    public String getMsg() {
+        return msg;
     }
 }
