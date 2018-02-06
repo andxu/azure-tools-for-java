@@ -30,7 +30,7 @@ import com.microsoft.azure.hdinsight.sdk.rest.IConvertible;
  * Based on Apache Livy, v0.4.0-incubating, refer to http://livy.incubator.apache.org./docs/0.4.0-incubating/rest-api.html
  *
  * For the following URI:
- *   http://<livy base>/sessions
+ *   http://<livy base>/sessions/<sessionId>/statements
  *
  * HTTP Operations Supported
  *   POST

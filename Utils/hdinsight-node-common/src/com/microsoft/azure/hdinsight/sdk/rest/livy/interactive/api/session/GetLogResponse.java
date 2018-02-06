@@ -32,7 +32,7 @@ import java.util.List;
  * Based on Apache Livy, v0.4.0-incubating, refer to http://livy.incubator.apache.org./docs/0.4.0-incubating/rest-api.html
  *
  * For the following URI:
- *   http://<livy base>/sessions
+ *   http://<livy base>/sessions/<sessionId>/log
  *
  * HTTP Operations Supported
  *   GET

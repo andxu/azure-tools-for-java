@@ -28,7 +28,7 @@ package com.microsoft.azure.hdinsight.sdk.rest.livy.interactive.api.session;
  * Based on Apache Livy, v0.4.0-incubating, refer to http://livy.incubator.apache.org./docs/0.4.0-incubating/rest-api.html
  *
  * For the following URI:
- *   http://<livy base>/sessions
+ *   http://<livy base>/sessions/<sessionId>/state
  *
  * HTTP Operations Supported
  *   GET
