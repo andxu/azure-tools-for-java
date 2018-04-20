@@ -204,7 +204,7 @@ public class SparkSubmitModel {
         String filePath = selectedClusterDetail.isEmulator() ?
                 SparkSubmitHelper.uploadFileToEmulator(selectedClusterDetail, buildJarPath) :
                 (selectedClusterDetail.getStorageAccount() == null ? SparkSubmitHelper.uploadFileToHDFS(selectedClusterDetail, buildJarPath) :
-                    JobUtils.uploadFileToAzure(new File(buildJarPath), selectedClusterDetail.getStorageAccount(), selectedClusterDetail.getStorageAccount().getDefaultContainerOrRootPath(), JobUtils.getFormatPathByDate(), HDInsightUtil.getToolWindowMessageSubject(), (CallableSingleArg)null));
+                    JobUtils.uploadFileToAzure(new File(buildJarPath), selectedClusterDetail.getStorageAccount(), selectedClusterDetail.getStorageAccount().getDefaultContainerOrRootPath(), JobUtils.getFormatPathByDate(), HDInsightUtil.getToolWindowMessageSubject(), null));
         submissionParameter.setFilePath(filePath);
     }
     
