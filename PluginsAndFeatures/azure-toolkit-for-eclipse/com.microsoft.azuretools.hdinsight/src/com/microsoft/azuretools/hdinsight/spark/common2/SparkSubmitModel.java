@@ -33,7 +33,6 @@ import com.microsoft.azure.hdinsight.spark.common.SparkSubmissionParameter;
 import com.microsoft.azure.hdinsight.spark.common.SparkSubmitResponse;
 import com.microsoft.azure.hdinsight.spark.jobs.JobUtils;
 import com.microsoft.tooling.msservices.components.DefaultLoader;
-import com.microsoft.tooling.msservices.helpers.CallableSingleArg;
 import com.microsoft.azuretools.azurecommons.helpers.NotNull;
 import com.microsoft.azuretools.azurecommons.helpers.StringHelper;
 import com.microsoft.azuretools.telemetry.AppInsightsClient;
