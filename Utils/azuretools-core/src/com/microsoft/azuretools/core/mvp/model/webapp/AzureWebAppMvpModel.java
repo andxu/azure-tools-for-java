@@ -57,12 +57,12 @@ import com.microsoft.azuretools.utils.WebAppUtils;
 public class AzureWebAppMvpModel {
 
     public static final String CANNOT_GET_WEB_APP_WITH_ID = "Cannot get Web App with ID: ";
-    private final Map<String, List<ResourceEx<WebApp>>> subscriptionIdToWebAppsMap;
+    private final Map<String, List<ResourceEx<WebApp>>> subscriptionIdToWebAppsOnWindowsMap;
     private final Map<String, List<ResourceEx<WebApp>>> subscriptionIdToWebAppsOnLinuxMap;
 
     private AzureWebAppMvpModel() {
         subscriptionIdToWebAppsOnLinuxMap = new ConcurrentHashMap<>();
-        subscriptionIdToWebAppsMap = new ConcurrentHashMap<>();
+        subscriptionIdToWebAppsOnWindowsMap = new ConcurrentHashMap<>();
     }
 
     public static AzureWebAppMvpModel getInstance() {
@@ -325,9 +325,9 @@ public class AzureWebAppMvpModel {
     /**
      * List Web Apps by Subscription ID.
      */
-    public List<ResourceEx<WebApp>> listWebAppsBySubscriptionId(String sid, boolean force) {
-        if (!force && subscriptionIdToWebAppsMap.containsKey(sid)) {
-            return subscriptionIdToWebAppsMap.get(sid);
+    public List<ResourceEx<WebApp>> listWebAppsOnWindowsBySubscriptionId(String sid, boolean force) {
+        if (!force && subscriptionIdToWebAppsOnWindowsMap.containsKey(sid)) {
+            return subscriptionIdToWebAppsOnWindowsMap.get(sid);
         }
         List<ResourceEx<WebApp>> webAppList = new ArrayList<>();
         try {
@@ -337,7 +337,7 @@ public class AzureWebAppMvpModel {
                     webAppList.add(new ResourceEx<>(webApp, sid));
                 }
             }
-            subscriptionIdToWebAppsMap.put(sid, webAppList);
+            subscriptionIdToWebAppsOnWindowsMap.put(sid, webAppList);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -347,11 +347,11 @@ public class AzureWebAppMvpModel {
     /**
      * List all the Web Apps in selected subscriptions.
      */
-    public List<ResourceEx<WebApp>> listWebApps(boolean force) {
+    public List<ResourceEx<WebApp>> listAllWebAppsOnWindows(boolean force) {
         List<ResourceEx<WebApp>> webAppList = new ArrayList<>();
         List<Subscription> subscriptions = AzureMvpModel.getInstance().getSelectedSubscriptions();
         for (Subscription sub : subscriptions) {
-            webAppList.addAll(this.listWebAppsBySubscriptionId(sub.subscriptionId(), force));
+            webAppList.addAll(this.listWebAppsOnWindowsBySubscriptionId(sub.subscriptionId(), force));
         }
         return webAppList;
     }
@@ -364,23 +364,23 @@ public class AzureWebAppMvpModel {
      * @return list of Web App on Linux
      */
     public List<ResourceEx<WebApp>> listWebAppsOnLinuxBySubscriptionId(String sid, boolean force) {
-        List<ResourceEx<WebApp>> wal = new ArrayList<>();
         if (!force && subscriptionIdToWebAppsOnLinuxMap.containsKey(sid)) {
             return subscriptionIdToWebAppsOnLinuxMap.get(sid);
         }
+        List<ResourceEx<WebApp>> webAppList = new ArrayList<>();
         try {
             Azure azure = AuthMethodManager.getInstance().getAzureClient(sid);
-            wal.addAll(azure.webApps().list()
+            webAppList.addAll(azure.webApps().list()
                     .stream()
                     .filter(app -> OperatingSystem.LINUX.equals(app.operatingSystem()))
                     .map(app -> new ResourceEx<>(app, sid))
                     .collect(Collectors.toList())
             );
-            subscriptionIdToWebAppsOnLinuxMap.put(sid, wal);
+            subscriptionIdToWebAppsOnLinuxMap.put(sid, webAppList);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return wal;
+        return webAppList;
     }
 
     /**
@@ -443,8 +443,8 @@ public class AzureWebAppMvpModel {
         }
     }
 
-    public void cleanWebApps() {
-        subscriptionIdToWebAppsMap.clear();
+    public void cleanWebAppsOnWindows() {
+        subscriptionIdToWebAppsOnWindowsMap.clear();
     }
 
     public void cleanWebAppsOnLinux() {
