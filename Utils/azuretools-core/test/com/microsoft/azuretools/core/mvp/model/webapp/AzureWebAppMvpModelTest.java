@@ -88,7 +88,7 @@ public class AzureWebAppMvpModelTest {
 
     @After
     public void tearDown() {
-        azureWebAppMvpModel.cleanWebApps();
+        azureWebAppMvpModel.cleanWebAppsOnWindows();
         azureWebAppMvpModel.cleanWebAppsOnLinux();
         reset(webAppsMock);
         reset(azureMock);
@@ -293,19 +293,19 @@ public class AzureWebAppMvpModelTest {
         storedList.add(app2);
         when(webAppsMock.list()).thenReturn((PagedList<WebApp>) storedList);
 
-        List<ResourceEx<WebApp>> rstList = azureWebAppMvpModel.listWebAppsBySubscriptionId(MOCK_SUBSCRIPTION, false);
+        List<ResourceEx<WebApp>> rstList = azureWebAppMvpModel.listWebAppsOnWindowsBySubscriptionId(MOCK_SUBSCRIPTION, false);
         verify(webAppsMock, times(1)).list();
         assertEquals(0, rstList.size());
         reset(webAppsMock);
 
         storedList.add(app3);
-        rstList = azureWebAppMvpModel.listWebAppsBySubscriptionId(MOCK_SUBSCRIPTION, false);
+        rstList = azureWebAppMvpModel.listWebAppsOnWindowsBySubscriptionId(MOCK_SUBSCRIPTION, false);
         verify(webAppsMock, times(0)).list();
         assertEquals(0, rstList.size());
         reset(webAppsMock);
 
         when(webAppsMock.list()).thenReturn((PagedList<WebApp>) storedList);
-        rstList = azureWebAppMvpModel.listWebAppsBySubscriptionId(MOCK_SUBSCRIPTION, true);
+        rstList = azureWebAppMvpModel.listWebAppsOnWindowsBySubscriptionId(MOCK_SUBSCRIPTION, true);
         verify(webAppsMock, times(1)).list();
         assertEquals(1, rstList.size());
         reset(webAppsMock);
@@ -332,18 +332,18 @@ public class AzureWebAppMvpModelTest {
             printException(e);
         }
 
-        mockWebAppModel.listWebApps(false);
-        verify(mockWebAppModel, times(0)).listWebAppsBySubscriptionId(anyString(), eq(false));
+        mockWebAppModel.listAllWebAppsOnWindows(false);
+        verify(mockWebAppModel, times(0)).listWebAppsOnWindowsBySubscriptionId(anyString(), eq(false));
 
         subscriptions.add(sub1);
         subscriptions.add(sub2);
         subscriptions.add(sub3);
-        mockWebAppModel.listWebApps(false);
-        verify(mockWebAppModel, times(3)).listWebAppsBySubscriptionId(anyString(), eq(false));
+        mockWebAppModel.listAllWebAppsOnWindows(false);
+        verify(mockWebAppModel, times(3)).listWebAppsOnWindowsBySubscriptionId(anyString(), eq(false));
         reset(mockWebAppModel);
 
-        mockWebAppModel.listWebApps(true);
-        verify(mockWebAppModel, times(3)).listWebAppsBySubscriptionId(anyString(), eq(true));
+        mockWebAppModel.listAllWebAppsOnWindows(true);
+        verify(mockWebAppModel, times(3)).listWebAppsOnWindowsBySubscriptionId(anyString(), eq(true));
     }
 
     @Test

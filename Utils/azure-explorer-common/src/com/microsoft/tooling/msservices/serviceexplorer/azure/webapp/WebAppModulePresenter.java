@@ -29,7 +29,7 @@ public class WebAppModulePresenter<V extends WebAppModule> extends MvpPresenter<
     public void onModuleRefresh() {
         List<ResourceEx<WebApp>> webapps = new ArrayList<>();
         // TODO: add API in mvpModel, listBothWinAndLinuxWebApps to improve performance
-        webapps.addAll(AzureWebAppMvpModel.getInstance().listWebApps(true));
+        webapps.addAll(AzureWebAppMvpModel.getInstance().listAllWebAppsOnWindows(true));
         webapps.addAll(AzureWebAppMvpModel.getInstance().listAllWebAppsOnLinux(true));
 
         if (getMvpView() == null) {

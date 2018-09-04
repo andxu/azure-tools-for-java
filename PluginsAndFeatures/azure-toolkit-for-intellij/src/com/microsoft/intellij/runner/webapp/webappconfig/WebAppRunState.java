@@ -139,7 +139,7 @@ public class WebAppRunState extends AzureRunProfileState<WebApp> {
             AzureUIRefreshCore.execute(new AzureUIRefreshEvent(AzureUIRefreshEvent.EventType.REFRESH,null));
         }
         updateConfigurationDataModel(result);
-        AzureWebAppMvpModel.getInstance().listWebApps(true /*force*/);
+        AzureWebAppMvpModel.getInstance().listAllWebAppsOnWindows(true /*force*/);
     }
 
     @Override
