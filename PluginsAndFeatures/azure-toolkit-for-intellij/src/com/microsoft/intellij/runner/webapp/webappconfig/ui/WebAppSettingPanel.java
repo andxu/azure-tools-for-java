@@ -69,7 +69,7 @@ import com.microsoft.azuretools.core.mvp.model.ResourceEx;
 import com.microsoft.azuretools.core.mvp.model.webapp.JdkModel;
 import com.microsoft.azuretools.utils.WebAppUtils;
 import com.microsoft.intellij.runner.AzureSettingPanel;
-import com.microsoft.intellij.runner.container.utils.Constant;
+import com.microsoft.intellij.runner.webapp.Constants;
 import com.microsoft.intellij.runner.webapp.webappconfig.WebAppConfiguration;
 import com.microsoft.intellij.util.MavenRunTaskUtil;
 
@@ -556,7 +556,7 @@ public class WebAppSettingPanel extends AzureSettingPanel<WebAppConfiguration> i
             }
             final WebApp app = selectedWebApp.getResource();
             return app.operatingSystem() == OperatingSystem.WINDOWS ||
-                !Constant.LINUX_JAVA_SE_RUNTIME.equalsIgnoreCase(app.linuxFxVersion());
+                !Constants.LINUX_JAVA_SE_RUNTIME.equalsIgnoreCase(app.linuxFxVersion());
         }
 
         return rdoWindowsOS.isSelected() ||
