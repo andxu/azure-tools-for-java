@@ -40,6 +40,7 @@ import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.table.DefaultTableModel;
 
+import io.netty.util.internal.StringUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.idea.maven.model.MavenConstants;
@@ -808,9 +809,11 @@ public class WebAppSettingPanel extends AzureSettingPanel<WebAppConfiguration> i
     @Override
     public void fillPricingTier(@NotNull List<PricingTier> prices) {
         cbPricing.removeAllItems();
+        final String defaultPricingTier = StringUtil.isNullOrEmpty(webAppConfiguration.getPricing())
+            ? Constants.WEBAPP_DEFAULT_PRICING_TIER.toString() : webAppConfiguration.getPricing();
         for (PricingTier price : prices) {
             cbPricing.addItem(price);
-            if (Comparing.equal(price.toString(), webAppConfiguration.getPricing())) {
+            if (Comparing.equal(price.toString(), defaultPricingTier)) {
                 cbPricing.setSelectedItem(price);
             }
         }
