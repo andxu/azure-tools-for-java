@@ -40,7 +40,6 @@ import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.table.DefaultTableModel;
 
-import io.netty.util.internal.StringUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.idea.maven.model.MavenConstants;
@@ -77,6 +76,7 @@ import com.microsoft.intellij.runner.webapp.webappconfig.WebAppConfiguration;
 import com.microsoft.intellij.util.MavenRunTaskUtil;
 
 import icons.MavenIcons;
+import org.jsoup.helper.StringUtil;
 
 public class WebAppSettingPanel extends AzureSettingPanel<WebAppConfiguration> implements WebAppDeployMvpView {
 
@@ -809,11 +809,11 @@ public class WebAppSettingPanel extends AzureSettingPanel<WebAppConfiguration> i
     @Override
     public void fillPricingTier(@NotNull List<PricingTier> prices) {
         cbPricing.removeAllItems();
-        final String defaultPricingTier = StringUtil.isNullOrEmpty(webAppConfiguration.getPricing())
-            ? Constants.WEBAPP_DEFAULT_PRICING_TIER.toString() : webAppConfiguration.getPricing();
+        final String pricingTier = StringUtil.isBlank(webAppConfiguration.getPricing())
+            ? Constants.WEBAPP_DEFAULT_PRICING_TIER : webAppConfiguration.getPricing();
         for (PricingTier price : prices) {
             cbPricing.addItem(price);
-            if (Comparing.equal(price.toString(), defaultPricingTier)) {
+            if (Comparing.equal(price.toString(), pricingTier)) {
                 cbPricing.setSelectedItem(price);
             }
         }

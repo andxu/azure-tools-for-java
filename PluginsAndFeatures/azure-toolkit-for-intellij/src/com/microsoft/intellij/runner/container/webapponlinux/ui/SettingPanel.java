@@ -53,7 +53,6 @@ import com.microsoft.intellij.runner.container.webapponlinux.WebAppOnLinuxDeploy
 import com.microsoft.tooling.msservices.serviceexplorer.azure.container.WebAppOnLinuxDeployPresenter;
 import com.microsoft.tooling.msservices.serviceexplorer.azure.container.WebAppOnLinuxDeployView;
 
-import io.netty.util.internal.StringUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.idea.maven.project.MavenProject;
 
@@ -63,6 +62,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.jsoup.helper.StringUtil;
 
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -470,8 +471,8 @@ public class SettingPanel extends AzureSettingPanel<WebAppOnLinuxDeployConfigura
         defaultSubscriptionId = conf.getSubscriptionId();
         defaultWebAppId = conf.getWebAppId();
         defaultLocationName = conf.getLocationName();
-        defaultPricingTier = StringUtil.isNullOrEmpty(conf.getPricingSkuTier()) ?
-            Constant.WEBAPP_CONTAINER_DEFAULT_PRICING_TIER.toString() :
+        defaultPricingTier = StringUtil.isBlank(conf.getPricingSkuTier()) ?
+            Constant.WEBAPP_CONTAINER_DEFAULT_PRICING_TIER :
             new PricingTier(conf.getPricingSkuTier(), conf.getPricingSkuSize()).toString();
         defaultResourceGroup = conf.getResourceGroupName();
         defaultAppServicePlanId = conf.getAppServicePlanId();
