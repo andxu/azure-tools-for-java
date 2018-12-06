@@ -76,7 +76,6 @@ import com.microsoft.intellij.runner.webapp.webappconfig.WebAppConfiguration;
 import com.microsoft.intellij.util.MavenRunTaskUtil;
 
 import icons.MavenIcons;
-import org.jsoup.helper.StringUtil;
 
 public class WebAppSettingPanel extends AzureSettingPanel<WebAppConfiguration> implements WebAppDeployMvpView {
 
@@ -809,7 +808,7 @@ public class WebAppSettingPanel extends AzureSettingPanel<WebAppConfiguration> i
     @Override
     public void fillPricingTier(@NotNull List<PricingTier> prices) {
         cbPricing.removeAllItems();
-        final String pricingTier = StringUtil.isBlank(webAppConfiguration.getPricing())
+        final String pricingTier = StringUtils.isEmpty(webAppConfiguration.getPricing())
             ? Constants.WEBAPP_DEFAULT_PRICING_TIER : webAppConfiguration.getPricing();
         for (PricingTier price : prices) {
             cbPricing.addItem(price);
