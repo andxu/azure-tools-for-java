@@ -27,6 +27,13 @@ import com.intellij.execution.RunnerAndConfigurationSettings;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.Presentation;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.wm.ToolWindow;
+import com.intellij.openapi.wm.ToolWindowManager;
+import com.intellij.ui.content.Content;
+import com.intellij.ui.content.ContentFactory;
+import com.microsoft.azure.cosmosserverlessspark.spark.ui.livy.batch.CosmosServerlessSparkBatchJobsTableSchema;
+import com.microsoft.azure.cosmosserverlessspark.spark.ui.livy.batch.CosmosServerlessSparkBatchJobsViewer;
+import com.microsoft.azure.cosmosspark.serverexplore.cosmossparknode.CosmosSparkADLAccountNode;
 import com.microsoft.azure.cosmosspark.serverexplore.cosmossparknode.CosmosSparkClusterOps;
 import com.microsoft.azure.cosmosspark.serverexplore.ui.CosmosSparkClusterDestoryDialog;
 import com.microsoft.azure.cosmosspark.serverexplore.ui.CosmosSparkClusterMonitorDialog;
@@ -36,16 +43,22 @@ import com.microsoft.azure.hdinsight.common.logger.ILogger;
 import com.microsoft.azure.hdinsight.common.mvc.IdeSchedulers;
 import com.microsoft.azure.hdinsight.sdk.common.azure.serverless.AzureSparkServerlessAccount;
 import com.microsoft.azure.hdinsight.sdk.common.azure.serverless.AzureSparkServerlessCluster;
+import com.microsoft.azure.hdinsight.sdk.rest.azure.serverless.spark.models.SparkBatchJobList;
 import com.microsoft.azure.hdinsight.spark.actions.SparkAppSubmitContext;
 import com.microsoft.azure.hdinsight.spark.actions.SparkSubmitJobAction;
 import com.microsoft.azure.hdinsight.spark.run.configuration.CosmosServerlessSparkConfigurationFactory;
 import com.microsoft.azure.hdinsight.spark.run.configuration.CosmosServerlessSparkConfigurationType;
 import com.microsoft.azure.hdinsight.spark.run.configuration.CosmosSparkConfigurationFactory;
 import com.microsoft.azure.hdinsight.spark.run.configuration.CosmosSparkConfigurationType;
+import com.microsoft.azure.hdinsight.spark.ui.livy.batch.*;
 import com.microsoft.azuretools.azurecommons.helpers.NotNull;
+import com.microsoft.azuretools.azurecommons.helpers.Nullable;
 import com.microsoft.intellij.rxjava.IdeaSchedulers;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import rx.Observable;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.intellij.execution.configurations.ConfigurationTypeUtil.findConfigurationType;
 import static com.microsoft.azure.hdinsight.spark.actions.SparkDataKeys.CLUSTER;
@@ -70,7 +83,7 @@ public class CosmosSparkClusterOpsCtrl implements ILogger {
                     CosmosSparkClusterDestoryDialog destroyDialog = new CosmosSparkClusterDestoryDialog(
                             triplet.getRight(), triplet.getMiddle());
                     destroyDialog.show();
-                }, ex -> log().warn(ex.getMessage(), ex));
+                }, ex -> log().warn(ExceptionUtils.getStackTrace(ex)));
 
         this.sparkServerlessClusterOps.getProvisionAction()
                 .observeOn(ideSchedulers.dispatchUIThread())
@@ -80,7 +93,7 @@ public class CosmosSparkClusterOpsCtrl implements ILogger {
                     CosmosSparkProvisionDialog provisionDialog = new CosmosSparkProvisionDialog(
                             pair.getRight(), pair.getLeft());
                     provisionDialog.show();
-                }, ex -> log().warn(ex.getMessage(), ex));
+                }, ex -> log().warn(ExceptionUtils.getStackTrace(ex)));
 
         this.sparkServerlessClusterOps.getMonitorAction()
                 .observeOn(ideSchedulers.dispatchUIThread())
@@ -90,7 +103,7 @@ public class CosmosSparkClusterOpsCtrl implements ILogger {
                     CosmosSparkClusterMonitorDialog monitorDialog = new CosmosSparkClusterMonitorDialog(
                             pair.getRight(), pair.getLeft());
                     monitorDialog.show();
-                }, ex -> log().warn(ex.getMessage(), ex));
+                }, ex -> log().warn(ExceptionUtils.getStackTrace(ex)));
 
         this.sparkServerlessClusterOps.getUpdateAction()
                 .observeOn(ideSchedulers.dispatchUIThread())
@@ -100,7 +113,7 @@ public class CosmosSparkClusterOpsCtrl implements ILogger {
                     CosmosSparkClusterUpdateDialog updateDialog = new CosmosSparkClusterUpdateDialog(
                             pair.getRight(), pair.getLeft());
                     updateDialog.show();
-                }, ex -> log().warn(ex.getMessage(), ex));
+                }, ex -> log().warn(ExceptionUtils.getStackTrace(ex)));
 
         this.sparkServerlessClusterOps.getSubmitAction()
                 .observeOn(ideSchedulers.dispatchUIThread())
@@ -139,9 +152,9 @@ public class CosmosSparkClusterOpsCtrl implements ILogger {
 
                         new SparkSubmitJobAction().actionPerformed(event);
                     } catch (Exception ex) {
-                        log().error(ex.getMessage());
+                        log().warn(ex.getMessage());
                     }
-                }, ex -> log().error(ex.getMessage(), ex));
+                }, ex -> log().warn(ExceptionUtils.getStackTrace(ex)));
 
         this.sparkServerlessClusterOps.getServerlessSubmitAction()
                 .observeOn(ideSchedulers.dispatchUIThread())
@@ -180,8 +193,92 @@ public class CosmosSparkClusterOpsCtrl implements ILogger {
 
                         new SparkSubmitJobAction().actionPerformed(event);
                     } catch (Exception ex) {
-                        log().error(ex.getMessage());
+                        log().warn(ex.getMessage());
                     }
-                }, ex -> log().error(ex.getMessage(), ex));
+                }, ex -> log().warn(ExceptionUtils.getStackTrace(ex)));
+
+        this.sparkServerlessClusterOps.getViewServerlessJobsAction()
+                .observeOn(ideSchedulers.dispatchUIThread())
+                .flatMap(accountNodePair -> {
+                    log().info(String.format("View serverless jobs message received. account: %s, node: %s",
+                            accountNodePair.getLeft().getName(), accountNodePair.getRight().getName()));
+                    // check if the requested job list tab exists in tool window
+                    AzureSparkServerlessAccount account = accountNodePair.getLeft();
+                    CosmosSparkADLAccountNode node = accountNodePair.getRight();
+                    ToolWindow toolWindow = ToolWindowManager.getInstance((Project) node.getProject()).getToolWindow("Cosmos Serverless Spark Jobs");
+                    Content existingContent= toolWindow.getContentManager().findContent(getDisplayName(account.getName()));
+                    if (existingContent != null) {
+                        // if the requested job list tab already exists in tool window,
+                        // show the existing job list tab
+                        toolWindow.getContentManager().setSelectedContent(existingContent);
+                        toolWindow.activate(null);
+                        return Observable.empty();
+                    } else {
+                        // create a new tab if the requested job list tab does not exists
+                        return account.getSparkBatchJobList()
+                                .doOnNext(sparkBatchJobList -> {
+                                    // show serverless spark job list
+                                    CosmosServerlessSparkBatchJobsViewer jobView = new CosmosServerlessSparkBatchJobsViewer(account) {
+                                        @Override
+                                        public void refreshActionPerformed(@Nullable AnActionEvent anActionEvent) {
+                                            account.getSparkBatchJobList()
+                                                    .doOnNext(jobList -> {
+                                                        LivyBatchJobViewer.Model refreshedModel =
+                                                                new LivyBatchJobViewer.Model(
+                                                                        new LivyBatchJobTableViewport.Model(
+                                                                                new LivyBatchJobTableModel(new CosmosServerlessSparkBatchJobsTableSchema()),
+                                                                                getFirstJobPage(account, jobList)),
+                                                                        null
+                                                                );
+                                                        this.setData(refreshedModel);
+                                                    })
+                                                    .subscribe(jobList -> {}, ex -> log().warn(ExceptionUtils.getStackTrace(ex)));
+                                        }
+                                    };
+                                    LivyBatchJobViewer.Model model =
+                                            new LivyBatchJobViewer.Model(
+                                                    new LivyBatchJobTableViewport.Model(
+                                                            new LivyBatchJobTableModel(new CosmosServerlessSparkBatchJobsTableSchema()),
+                                                            getFirstJobPage(account, sparkBatchJobList)),
+                                                    null
+                                            );
+                                    jobView.setData(model);
+
+                                    ContentFactory contentFactory = ContentFactory.SERVICE.getInstance();
+                                    Content content = contentFactory.createContent(jobView.getComponent(), getDisplayName(account.getName()), false);
+                                    content.setDisposer(jobView);
+                                    toolWindow.getContentManager().addContent(content);
+                                    toolWindow.getContentManager().setSelectedContent(content);
+                                    toolWindow.activate(null);
+                                });
+                    }
+                })
+                .subscribe(jobList -> {},  ex -> log().warn(ExceptionUtils.getStackTrace(ex)));
+    }
+
+    @NotNull
+    private String getDisplayName(@NotNull String adlAccountName) {
+        return adlAccountName + " Jobs";
+    }
+
+    @NotNull
+    private LivyBatchJobTableModel.JobPage getFirstJobPage(@NotNull AzureSparkServerlessAccount account,
+                                                           @NotNull SparkBatchJobList jobList) {
+        return new LivyBatchJobTableModel.JobPage() {
+            @Nullable
+            @Override
+            public List<UniqueColumnNameTableSchema.RowDescriptor> items() {
+                CosmosServerlessSparkBatchJobsTableSchema tableSchema = new CosmosServerlessSparkBatchJobsTableSchema();
+                return jobList.value().stream()
+                        .map(sparkBatchJob -> tableSchema.new CosmosServerlessSparkJobDescriptor(account, sparkBatchJob))
+                        .collect(Collectors.toList());
+            }
+
+            @Nullable
+            @Override
+            public String nextPageLink() {
+                return jobList.nextLink();
+            }
+        };
     }
 }
