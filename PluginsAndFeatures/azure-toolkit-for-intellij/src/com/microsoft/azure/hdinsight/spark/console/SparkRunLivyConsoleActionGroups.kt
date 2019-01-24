@@ -30,12 +30,12 @@ import com.intellij.openapi.project.Project
 import com.microsoft.azure.hdinsight.spark.run.action.SeqActions
 
 
-class SparkRunConsoleActionGroups : QuickSwitchSchemeAction() {
+class SparkRunLivyConsoleActionGroups : QuickSwitchSchemeAction() {
     override fun fillActions(project: Project?, group: DefaultActionGroup, dataContext: DataContext) {
         group.add(ActionManager.getInstance().getAction("Actions.RunLivySparkConsoleAction"))
         group.add(ActionManager.getInstance().getAction("Actions.RunCosmosSparkConsoleAction"))
     }
 }
 
-class LivySparkSelectTypeAndRunConsoleAction : SeqActions("Actions.SelectHDInsightSparkType", "Actions.SubmitSparkApplicationAction")
-class CosmosSparkSelectTypeAndRunConsoleAction : SeqActions("Actions.SelectCosmosSparkType", "Actions.SubmitSparkApplicationAction")
+class SelectLivySparkTypeThenRunLivyConsoleAction : SeqActions("Actions.SelectHDInsightSparkType", "Spark.RunScalaLivyConsole")
+class SelectCosmosSparkTypeThenRunLivyConsoleAction : SeqActions("Actions.SelectCosmosSparkType", "Spark.RunScalaLivyConsole")
