@@ -16,12 +16,14 @@ import com.microsoft.azuretools.core.utils.PluginUtil;
 import com.microsoft.azuretools.core.utils.ProgressDialog;
 import com.microsoft.azuretools.core.utils.UpdateProgressIndicator;
 import com.microsoft.azuretools.telemetry.AppInsightsClient;
+import com.microsoft.azuretools.telemetry.AppInsightsClient.ErrorType;
 import com.microsoft.azuretools.utils.AzureModel;
 import com.microsoft.azuretools.utils.AzureModelController;
 import com.microsoft.azuretools.utils.CanceledByUserException;
 import com.microsoft.azuretools.utils.WebAppUtils;
 import com.microsoft.azuretools.utils.WebAppUtils.WebAppDetails;
 import com.microsoft.azuretools.webapp.Activator;
+import com.microsoft.azuretools.webapp.utils.TelemetryUtil;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
@@ -177,6 +179,7 @@ public class WebAppDeployDialog extends AzureTitleAreaDialogWrapper {
             @Override
             public void widgetSelected(SelectionEvent e) {
                 sendTelemetry("CREATE");
+                TelemetryUtil.sendTelemetryOpEnd("open create webapp diag", buildProperties());
                 createAppService(project);
             }
         });
@@ -189,6 +192,7 @@ public class WebAppDeployDialog extends AzureTitleAreaDialogWrapper {
             @Override
             public void widgetSelected(SelectionEvent e) {
                 sendTelemetry("DELETE");
+                TelemetryUtil.sendTelemetryOpEnd("delete app service", buildProperties());
                 deleteAppService();
             }
         });
@@ -200,6 +204,8 @@ public class WebAppDeployDialog extends AzureTitleAreaDialogWrapper {
             @Override
             public void widgetSelected(SelectionEvent e) {
                 sendTelemetry("REFRESH");
+                TelemetryUtil.sendTelemetryOpStart("refresh", buildProperties());
+                long timeS = System.currentTimeMillis();
                 table.removeAll();
                 fillAppServiceDetails();
                 AzureModel.getInstance().setResourceGroupToWebAppMap(null);
@@ -208,6 +214,7 @@ public class WebAppDeployDialog extends AzureTitleAreaDialogWrapper {
                     lnkWebConfig.setText(WEB_CONFIG_DEFAULT);
                 }
                 AppServiceCreateDialog.initAspCache();
+                TelemetryUtil.sendTelemetryOpEnd("refresh", buildProperties(), System.currentTimeMillis() - timeS);
             }
         });
         btnRefresh.setText("Refresh");
@@ -587,6 +594,9 @@ public class WebAppDeployDialog extends AzureTitleAreaDialogWrapper {
                 String successMessage = "";
                 String errorMessage = "Error";
                 Map<String, String> postEventProperties = new HashMap<>();
+                postEventProperties.put("runtime",
+                    webApp.operatingSystem() == OperatingSystem.LINUX ? "linux-" + webApp.linuxFxVersion()
+                        : "windows-" + webApp.javaContainer());
                 postEventProperties.put("Java App Name", project.getName());
                 try {
                     boolean isJar = MavenUtils.isMavenProject(project) && MavenUtils.getPackaging(project)
@@ -601,6 +611,8 @@ public class WebAppDeployDialog extends AzureTitleAreaDialogWrapper {
                     if (!MavenUtils.isMavenProject(project)) {
                         export(artifactName, artifactPath);
                     }
+                    long timeStart = System.currentTimeMillis();
+                    TelemetryUtil.sendTelemetryOpStart("Deploy as WebApp", postEventProperties);
                     message = "Deploying Web App...";
                     monitor.setTaskName(message);
                     AzureDeploymentProgressNotification.notifyProgress(this, deploymentName, sitePath, 35, message);
@@ -627,7 +639,8 @@ public class WebAppDeployDialog extends AzureTitleAreaDialogWrapper {
                     }
                     postEventProperties.put("uploadingTryCount", String.valueOf(uploadingTryCount));
                     webApp.start();
-
+                    TelemetryUtil.sendTelemetryOpEnd("Deploy as WebApp", postEventProperties,
+                        System.currentTimeMillis() - timeStart);
                     if (monitor.isCanceled()) {
                         AzureDeploymentProgressNotification.notifyProgress(this, deploymentName, null, -1,
                             cancelMessage);
@@ -674,6 +687,7 @@ public class WebAppDeployDialog extends AzureTitleAreaDialogWrapper {
                     monitor.done();
                     AzureDeploymentProgressNotification.notifyProgress(this, deploymentName, sitePath, 100,
                         successMessage);
+                    AppInsightsClient.create("Deploy as WebApp", "", postEventProperties);
                 } catch (Exception ex) {
                     postEventProperties.put("PublishError", ex.getMessage());
                     LOG.log(new Status(IStatus.ERROR, Activator.PLUGIN_ID,
@@ -681,8 +695,9 @@ public class WebAppDeployDialog extends AzureTitleAreaDialogWrapper {
                     AzureDeploymentProgressNotification.notifyProgress(this, deploymentName, null, -1, errorMessage);
                     webApp.start();
                     Display.getDefault().asyncExec(() -> ErrorWindow.go(parentShell, ex.getMessage(), errTitle));
+                    TelemetryUtil.sendTelemetryOpError("Deploy webapp", ErrorType.systemError, ex.getMessage(),
+                        postEventProperties);
                 }
-                AppInsightsClient.create("Deploy as WebApp", "", postEventProperties);
                 return Status.OK_STATUS;
             }
         };
@@ -741,5 +756,12 @@ public class WebAppDeployDialog extends AzureTitleAreaDialogWrapper {
         properties.put("Title", this.getShell().getText());
         AppInsightsClient.createByType(AppInsightsClient.EventType.Dialog, this.getClass().getSimpleName(), action,
             properties);
+    }
+
+    private Map<String, String> buildProperties() {
+        final Map<String, String> properties = new HashMap<>();
+        properties.put("Window", this.getClass().getSimpleName());
+        properties.put("Title", this.getShell().getText());
+        return properties;
     }
 }

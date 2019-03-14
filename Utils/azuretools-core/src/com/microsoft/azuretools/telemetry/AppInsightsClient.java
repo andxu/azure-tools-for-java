@@ -25,13 +25,18 @@ package com.microsoft.azuretools.telemetry;
 import com.microsoft.applicationinsights.TelemetryClient;
 import com.microsoft.azuretools.adauth.StringUtils;
 import com.microsoft.azuretools.azurecommons.helpers.Nullable;
-
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 
 public class AppInsightsClient {
+    private static final String EVENT_SPLIT = "/";
+    private static final String OPERATION_ID = "operationId";
+    private static final String OPERATION_NAME = "operationName";
+    private static final String ERROR_CODE = "errorCode";
+    private static final String ERROR_MSG = "message";
+    private static final String ERROR_TYPE = "errorType";
     static AppInsightsConfiguration configuration;
 
     public enum EventType {
@@ -45,6 +50,17 @@ public class AppInsightsClient {
         Plugin,
         Subscription,
         Azure
+    }
+
+    public enum EventName {
+        opStart,
+        opEnd,
+        error
+    }
+
+    public enum ErrorType {
+        userError,
+        systemError
     }
 
     public static void setAppInsightsConfiguration(AppInsightsConfiguration appInsightsConfiguration) {
@@ -99,43 +115,49 @@ public class AppInsightsClient {
     }
 
     public static void create(String eventName, String version, @Nullable Map<String, String> myProperties, boolean force) {
-        if (!isAppInsightsClientAvailable())
-            return;
+        create(eventName, version, myProperties, null, force);
+    }
 
-        if (configuration.validated()) {
+    private static void create(String eventName, String version, @Nullable Map<String, String> myProperties,
+        Map<String, Double> metrics, boolean force) {
+        if (isAppInsightsClientAvailable() && configuration.validated()) {
             String prefValue = configuration.preferenceVal();
             if (prefValue == null || prefValue.isEmpty() || prefValue.equalsIgnoreCase("true") || force) {
                 TelemetryClient telemetry = TelemetryClientSingleton.getTelemetry();
-
-                Map<String, String> properties = myProperties == null ? new HashMap<String, String>() : new HashMap<String, String>(myProperties);
-                properties.put("SessionId", configuration.sessionId());
-                properties.put("IDE", configuration.ide());
-
-                // Telemetry client doesn't accept null value for ConcurrentHashMap doesn't accept null as key or value..
-                for (Iterator<Map.Entry<String, String>> iter = properties.entrySet().iterator(); iter.hasNext(); ) {
-                    Map.Entry<String, String> entry = iter.next();
-                    if (StringUtils.isNullOrEmpty(entry.getKey()) || StringUtils.isNullOrEmpty(entry.getValue())) {
-                        iter.remove();
-                    }
-                }
-                if (version != null && !version.isEmpty()) {
-                    properties.put("Library Version", version);
-                }
-                String pluginVersion = configuration.pluginVersion();
-                if (pluginVersion != null && !pluginVersion.isEmpty()) {
-                    properties.put("Plugin Version", pluginVersion);
-                }
-
-                String instID = configuration.installationId();
-                if (instID != null && !instID.isEmpty()) {
-                    properties.put("Installation ID", instID);
-                }
-                synchronized(TelemetryClientSingleton.class){
-                    telemetry.trackEvent(eventName, properties, null);
+                Map<String, String> properties = buildProperties(version, myProperties);
+                synchronized (TelemetryClientSingleton.class) {
+                    telemetry.trackEvent(eventName, properties, metrics);
                     telemetry.flush();
                 }
             }
         }
+    }
+
+    private static Map<String, String> buildProperties(String version, Map<String, String> myProperties) {
+        Map<String, String> properties = myProperties == null ? new HashMap<>() : new HashMap<>(myProperties);
+        properties.put("SessionId", configuration.sessionId());
+        properties.put("IDE", configuration.ide());
+
+        // Telemetry client doesn't accept null value for ConcurrentHashMap doesn't accept null as key or value..
+        for (Iterator<Map.Entry<String, String>> iter = properties.entrySet().iterator(); iter.hasNext(); ) {
+            Map.Entry<String, String> entry = iter.next();
+            if (StringUtils.isNullOrEmpty(entry.getKey()) || StringUtils.isNullOrEmpty(entry.getValue())) {
+                iter.remove();
+            }
+        }
+        if (version != null && !version.isEmpty()) {
+            properties.put("Library Version", version);
+        }
+        String pluginVersion = configuration.pluginVersion();
+        if (!StringUtils.isNullOrEmpty(pluginVersion)) {
+            properties.put("Plugin Version", pluginVersion);
+        }
+
+        String instID = configuration.installationId();
+        if (!StringUtils.isNullOrEmpty(instID)) {
+            properties.put("Installation ID", instID);
+        }
+        return properties;
     }
 
     public static void createFTPEvent(String eventName, String uri, String appName, String subId) {
@@ -175,4 +197,51 @@ public class AppInsightsClient {
     private static boolean isAppInsightsClientAvailable() {
         return configuration != null;
     }
+
+
+    public static void sendOpEnd(EventType eventType, String operName, Map<String, String> properties) {
+        sendOpEnd(eventType, operName, properties, null);
+    }
+
+    public static void sendOpEnd(EventType eventType, String operName, Map<String, String> properties,
+        Map<String, Double> metrics) {
+        properties.put(OPERATION_NAME, operName);
+        properties.put(OPERATION_ID, UUID.randomUUID().toString());
+
+        String eventName = getEventName(eventType, EventName.opEnd);
+        create(eventName, null, properties, metrics, false);
+    }
+
+    public static void sendOpStart(EventType eventType, String operName, Map<String, String> properties) {
+        properties.put(OPERATION_NAME, operName);
+        properties.put(OPERATION_ID, UUID.randomUUID().toString());
+
+        String eventName = getEventName(eventType, EventName.opStart);
+        create(eventName, null, properties, false);
+    }
+
+    public static void sendError(EventType eventType, String operName, ErrorType errorType, String errMsg,
+        Map<String, String> properties) {
+        sendError(eventType, operName, errorType, errMsg, properties, null);
+    }
+
+    public static void sendError(EventType eventType, String operName, ErrorType errorType, String errMsg,
+        Map<String, String> properties, Map<String, Double> metrics) {
+        properties.put(OPERATION_NAME, operName);
+        properties.put(OPERATION_ID, UUID.randomUUID().toString());
+        properties.put(ERROR_CODE, "1");
+        properties.put(ERROR_MSG, errMsg);
+        properties.put(ERROR_TYPE, errorType.name());
+
+        String eventName = getEventName(eventType, EventName.error);
+        create(eventName, null, properties, metrics, false);
+    }
+
+    private static String getEventName(EventType eventType, EventName eventName) {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(configuration.eventNamePrefix()).append(eventType.name()).append(EVENT_SPLIT)
+            .append(eventName.name());
+        return stringBuilder.toString();
+    }
+
 }

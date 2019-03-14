@@ -40,12 +40,14 @@ import com.microsoft.azuretools.core.utils.MavenUtils;
 import com.microsoft.azuretools.core.utils.PluginUtil;
 import com.microsoft.azuretools.core.utils.ProgressDialog;
 import com.microsoft.azuretools.core.utils.UpdateProgressIndicator;
+import com.microsoft.azuretools.telemetry.AppInsightsClient.ErrorType;
 import com.microsoft.azuretools.utils.AzureModel;
 import com.microsoft.azuretools.utils.AzureModelController;
 import com.microsoft.azuretools.utils.AzureUIRefreshCore;
 import com.microsoft.azuretools.utils.AzureUIRefreshEvent;
 import com.microsoft.azuretools.utils.WebAppUtils;
 import com.microsoft.azuretools.webapp.Activator;
+import com.microsoft.azuretools.webapp.utils.TelemetryUtil;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -1080,6 +1082,10 @@ public class AppServiceCreateDialog extends AzureTitleAreaDialogWrapper {
         String errTitle = ERROR_DIALOG_TITLE;
         cleanError();
         collectData();
+        Map<String, String> properties = new HashMap<>();
+        properties.put("runtime",
+            model.getOS() == OperatingSystem.LINUX ? "Linux-" + model.getLinuxRuntime().toString()
+                : "windows-" + model.getWebContainer());
         try {
             ProgressDialog.get(this.getShell(), CREATE_APP_SERVICE_PROGRESS_TITLE).run(true, true,
                 (monitor) -> {
@@ -1093,6 +1099,8 @@ public class AppServiceCreateDialog extends AzureTitleAreaDialogWrapper {
                         Display.getDefault().asyncExec(() -> AppServiceCreateDialog.super.cancelPressed());
                     }
                     try {
+                        TelemetryUtil.sendTelemetryOpStart("create web app", properties);
+                        long timeStart = System.currentTimeMillis();
                         webApp = AzureWebAppMvpModel.getInstance().createWebApp(model);
                         if (!appSettings.isEmpty()) {
                             webApp.update().withAppSettings(appSettings).apply();
@@ -1113,13 +1121,19 @@ public class AppServiceCreateDialog extends AzureTitleAreaDialogWrapper {
                             AzureUIRefreshCore.execute(
                                 new AzureUIRefreshEvent(AzureUIRefreshEvent.EventType.REFRESH, null));
                         }
+                        TelemetryUtil
+                            .sendTelemetryOpEnd("create web app", properties, System.currentTimeMillis() - timeStart);
                     } catch (Exception ex) {
+                        TelemetryUtil
+                            .sendTelemetryOpError("create web app", ErrorType.userError, ex.getMessage(), properties);
                         LOG.log(new Status(IStatus.ERROR, Activator.PLUGIN_ID,
                             "run@ProgressDialog@okPressed@AppServiceCreateDialog", ex));
                         Display.getDefault().asyncExec(() -> ErrorWindow.go(getShell(), ex.getMessage(), errTitle));
                     }
                 });
         } catch (Exception ex) {
+            TelemetryUtil
+                .sendTelemetryOpError("create web app", ErrorType.systemError, ex.getMessage(), properties);
             LOG.log(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "okPressed@AppServiceCreateDialog", ex));
             ErrorWindow.go(getShell(), ex.getMessage(), errTitle);
         }
@@ -1283,9 +1297,9 @@ public class AppServiceCreateDialog extends AzureTitleAreaDialogWrapper {
             index = cbJavaVersion.getSelectionIndex();
             model.setJdkVersion(index < 0 ? null : javaVersions.get(index).getJavaVersion());
 
-            //Windows does not provider java se parameter, and the api here needs a parameter, so here just use
+            // Windows does not provider java se parameter, and the api here needs a parameter, so here just use
             // TOMCAT_8.5_NEWEST.
-            //The App services itself start a jar file based on the web.config
+            // The App services itself start a jar file based on the web.config
             if (packaging.equals(WebAppUtils.TYPE_JAR)) {
                 model.setWebContainer(WebContainer.TOMCAT_8_5_NEWEST.toString());
             } else {
