@@ -16,7 +16,9 @@ import com.microsoft.azuretools.core.utils.PluginUtil;
 import com.microsoft.azuretools.core.utils.ProgressDialog;
 import com.microsoft.azuretools.core.utils.UpdateProgressIndicator;
 import com.microsoft.azuretools.telemetry.AppInsightsClient;
-import com.microsoft.azuretools.telemetry.AppInsightsClient.ErrorType;
+import com.microsoft.azuretools.telemetry.TelemetryConstants;
+import com.microsoft.azuretools.telemetrywrapper.ErrorType;
+import com.microsoft.azuretools.telemetrywrapper.EventType;
 import com.microsoft.azuretools.utils.AzureModel;
 import com.microsoft.azuretools.utils.AzureModelController;
 import com.microsoft.azuretools.utils.CanceledByUserException;
@@ -179,7 +181,7 @@ public class WebAppDeployDialog extends AzureTitleAreaDialogWrapper {
             @Override
             public void widgetSelected(SelectionEvent e) {
                 sendTelemetry("CREATE");
-                TelemetryUtil.sendTelemetryOpEnd("open create webapp diag", buildProperties());
+                TelemetryUtil.logEvent(EventType.info, TelemetryConstants.OPEN_CREATEWEBAPP_DIALOG, buildProperties());
                 createAppService(project);
             }
         });
@@ -192,7 +194,6 @@ public class WebAppDeployDialog extends AzureTitleAreaDialogWrapper {
             @Override
             public void widgetSelected(SelectionEvent e) {
                 sendTelemetry("DELETE");
-                TelemetryUtil.sendTelemetryOpEnd("delete app service", buildProperties());
                 deleteAppService();
             }
         });
@@ -204,8 +205,9 @@ public class WebAppDeployDialog extends AzureTitleAreaDialogWrapper {
             @Override
             public void widgetSelected(SelectionEvent e) {
                 sendTelemetry("REFRESH");
-                TelemetryUtil.sendTelemetryOpStart("refresh", buildProperties());
-                long timeS = System.currentTimeMillis();
+                Map<String, String> properties = buildProperties();
+                TelemetryUtil.sendTelemetryOpStart(TelemetryConstants.REFRESH_METADATA);
+                TelemetryUtil.sendTelemetryInfo(properties);
                 table.removeAll();
                 fillAppServiceDetails();
                 AzureModel.getInstance().setResourceGroupToWebAppMap(null);
@@ -214,7 +216,7 @@ public class WebAppDeployDialog extends AzureTitleAreaDialogWrapper {
                     lnkWebConfig.setText(WEB_CONFIG_DEFAULT);
                 }
                 AppServiceCreateDialog.initAspCache();
-                TelemetryUtil.sendTelemetryOpEnd("refresh", buildProperties(), System.currentTimeMillis() - timeS);
+                TelemetryUtil.sendTelemetryOpEnd();
             }
         });
         btnRefresh.setText("Refresh");
@@ -611,8 +613,7 @@ public class WebAppDeployDialog extends AzureTitleAreaDialogWrapper {
                     if (!MavenUtils.isMavenProject(project)) {
                         export(artifactName, artifactPath);
                     }
-                    long timeStart = System.currentTimeMillis();
-                    TelemetryUtil.sendTelemetryOpStart("Deploy as WebApp", postEventProperties);
+                    TelemetryUtil.sendTelemetryOpStart(TelemetryConstants.DEPLOY_WEBAPP);
                     message = "Deploying Web App...";
                     monitor.setTaskName(message);
                     AzureDeploymentProgressNotification.notifyProgress(this, deploymentName, sitePath, 35, message);
@@ -639,8 +640,6 @@ public class WebAppDeployDialog extends AzureTitleAreaDialogWrapper {
                     }
                     postEventProperties.put("uploadingTryCount", String.valueOf(uploadingTryCount));
                     webApp.start();
-                    TelemetryUtil.sendTelemetryOpEnd("Deploy as WebApp", postEventProperties,
-                        System.currentTimeMillis() - timeStart);
                     if (monitor.isCanceled()) {
                         AzureDeploymentProgressNotification.notifyProgress(this, deploymentName, null, -1,
                             cancelMessage);
@@ -695,8 +694,11 @@ public class WebAppDeployDialog extends AzureTitleAreaDialogWrapper {
                     AzureDeploymentProgressNotification.notifyProgress(this, deploymentName, null, -1, errorMessage);
                     webApp.start();
                     Display.getDefault().asyncExec(() -> ErrorWindow.go(parentShell, ex.getMessage(), errTitle));
-                    TelemetryUtil.sendTelemetryOpError("Deploy webapp", ErrorType.systemError, ex.getMessage(),
-                        postEventProperties);
+                    TelemetryUtil
+                        .sendTelemetryOpError(ErrorType.systemError, ex.getMessage(), postEventProperties);
+                } finally {
+                    TelemetryUtil.sendTelemetryInfo(postEventProperties);
+                    TelemetryUtil.sendTelemetryOpEnd();
                 }
                 return Status.OK_STATUS;
             }
@@ -732,6 +734,7 @@ public class WebAppDeployDialog extends AzureTitleAreaDialogWrapper {
                 (monitor) -> {
                     monitor.beginTask("Deleting App Service...", IProgressMonitor.UNKNOWN);
                     try {
+                        TelemetryUtil.sendTelemetryOpStart(TelemetryConstants.DELETE_WEBAPP);
                         WebAppUtils.deleteAppService(wad);
                         Display.getDefault().asyncExec(() -> {
                             table.remove(selectedRow);
@@ -741,6 +744,9 @@ public class WebAppDeployDialog extends AzureTitleAreaDialogWrapper {
                         LOG.log(new Status(IStatus.ERROR, Activator.PLUGIN_ID,
                             "run@ProgressDialog@deleteAppService@AppServiceCreateDialog", ex));
                         Display.getDefault().asyncExec(() -> ErrorWindow.go(getShell(), ex.getMessage(), errTitle));
+                        TelemetryUtil.sendTelemetryOpError(ErrorType.userError, ex.getMessage(), null);
+                    } finally {
+                        TelemetryUtil.sendTelemetryOpEnd();
                     }
                 });
         } catch (Exception ex) {
