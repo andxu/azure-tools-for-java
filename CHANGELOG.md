@@ -4,6 +4,7 @@ All notable changes to "Azure Toolkit for IntelliJ IDEA" will be documented in t
 
 - [Change Log](#change-log)
 
+  - [3.21.0](#3210)
   - [3.20.0](#3200)
   - [3.19.0](#3190)
   - [3.18.0](#3180)
@@ -31,6 +32,27 @@ All notable changes to "Azure Toolkit for IntelliJ IDEA" will be documented in t
   - [3.0.8](#308)
   - [3.0.7](#307)
   - [3.0.6](#306)
+
+## 3.21.0
+
+### Added
+
+- Support Java 11 App Service
+- Add failure task debug feature for HDInsight cluster with Spark 2.3.2
+- Support linking cluster with ADLS GEN2 storage account
+- Add default storage type for cluster with ADLS GEN2 account
+
+### Changed
+
+- User experiences change for HDInsight Reader role cluster
+- AadProvider.json file is no longer needed for Spark on Cosmos Serverless feature
+
+### Fixed
+
+- [#2866](https://github.com/Microsoft/azure-tools-for-java/issues/2866) Fix uncaught exception when remote debug in HDI 4.0
+- [#2958](https://github.com/Microsoft/azure-tools-for-java/issues/2958) Fix deleted cluster re-appeared issue for Spark on Cosmos cluster
+- [#2988](https://github.com/Microsoft/azure-tools-for-java/issues/2988) Fix toolkit installation failure with version incompatibility issue
+- [#2977](https://github.com/Microsoft/azure-tools-for-java/issues/2977) Fix "Report to Microsoft" button been disabled issue
 
 ## 3.20.0
 
