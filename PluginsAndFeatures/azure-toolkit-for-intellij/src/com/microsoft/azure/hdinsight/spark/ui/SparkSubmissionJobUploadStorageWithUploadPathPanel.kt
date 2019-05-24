@@ -27,17 +27,20 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.util.Disposer
+import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.HideableTitledPanel
 import com.intellij.uiDesigner.core.GridConstraints.*
 import com.microsoft.azure.hdinsight.common.ClusterManagerEx
 import com.microsoft.azure.hdinsight.common.logger.ILogger
 import com.microsoft.azure.hdinsight.common.mvc.SettableControl
-import com.microsoft.azure.hdinsight.sdk.cluster.ClusterDetail
 import com.microsoft.azure.hdinsight.sdk.cluster.HDInsightAdditionalClusterDetail
 import com.microsoft.azure.hdinsight.sdk.cluster.IClusterDetail
 import com.microsoft.azure.hdinsight.sdk.common.AzureSparkClusterManager
 import com.microsoft.azure.hdinsight.sdk.common.azure.serverless.AzureSparkServerlessAccount
-import com.microsoft.azure.hdinsight.sdk.storage.*
+import com.microsoft.azure.hdinsight.sdk.storage.HDStorageAccount
+import com.microsoft.azure.hdinsight.sdk.storage.IHDIStorageAccount
+import com.microsoft.azure.hdinsight.sdk.storage.StorageAccountType
+import com.microsoft.azure.hdinsight.sdk.storage.StoragePathInfo
 import com.microsoft.azure.hdinsight.spark.common.SparkBatchJob
 import com.microsoft.azure.hdinsight.spark.common.SparkSubmitJobUploadStorageModel
 import com.microsoft.azure.hdinsight.spark.common.SparkSubmitStorageType
@@ -53,11 +56,12 @@ import rx.Observable
 import rx.Observable.empty
 import rx.Observable.just
 import rx.schedulers.Schedulers
+import rx.subjects.PublishSubject
 import rx.subjects.ReplaySubject
 import java.awt.CardLayout
 import java.util.concurrent.TimeUnit
-import java.util.regex.Pattern
 import javax.swing.*
+import javax.swing.event.DocumentEvent
 
 class SparkSubmissionJobUploadStorageWithUploadPathPanel
     : JPanel(), Disposable, SettableControl<SparkSubmitJobUploadStorageModel>, ILogger {
@@ -128,7 +132,7 @@ class SparkSubmissionJobUploadStorageWithUploadPathPanel
 
         val clusterSelectedCapacity = 2
 
-        //in order to get the pre select cluster name, use repalysubject type
+        //in order to get the pre select cluster name, use replaysubject type
         val clusterSelectedSubject: ReplaySubject<IClusterDetail> = disposableSubjectOf {
             ReplaySubject.createWithSize(clusterSelectedCapacity)
         }
@@ -324,6 +328,8 @@ class SparkSubmissionJobUploadStorageWithUploadPathPanel
                         setData(data)
                     }
         }
+
+        fun getCurrentUploadFieldText() : String? = uploadPathField.text?.trim()
     }
 
     val viewModel = ViewModel().apply {
