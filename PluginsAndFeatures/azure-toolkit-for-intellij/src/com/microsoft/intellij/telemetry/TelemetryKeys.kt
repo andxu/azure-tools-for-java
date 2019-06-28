@@ -20,12 +20,13 @@
  * SOFTWARE.
  */
 
-package com.microsoft.azuretools.telemetrywrapper;
+package com.microsoft.intellij.telemetry
 
-public enum ErrorType {
-    userError,
-    systemError,
-    serviceError,
-    toolError,
-    unclassifiedError
+import com.intellij.openapi.util.Key
+import com.microsoft.azuretools.telemetrywrapper.Operation
+
+class TelemetryKeys {
+    companion object {
+        @JvmField val OPERATION: Key<Operation> = Key.create("operation")
+    }
 }
