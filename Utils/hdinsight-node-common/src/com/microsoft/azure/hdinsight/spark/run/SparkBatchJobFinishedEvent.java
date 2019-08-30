@@ -20,36 +20,35 @@
  * SOFTWARE.
  */
 
-package com.microsoft.azure.hdinsight.sdk.common;
+package com.microsoft.azure.hdinsight.spark.run;
 
+import com.microsoft.azuretools.azurecommons.helpers.NotNull;
 import com.microsoft.azuretools.azurecommons.helpers.Nullable;
 
-import java.net.URI;
+public class SparkBatchJobFinishedEvent implements SparkBatchJobSubmissionEvent {
+    private final boolean isJobSucceed;
+    @NotNull
+    private final String state;
+    @NotNull
+    private final String diagnostics;
 
-public class SparkAzureDataLakePoolServiceException extends AzureDataLakeException {
-    @Nullable
-    private String requestId;
+    public SparkBatchJobFinishedEvent(boolean isJobSucceed, @NotNull String state, @Nullable String diagnostics) {
+        this.isJobSucceed = isJobSucceed;
+        this.state = state;
+        this.diagnostics = diagnostics;
+    }
 
-    @Nullable
-    private URI requestUri;
+    public boolean getIsJobSucceed() {
+        return isJobSucceed;
+    }
 
-    public SparkAzureDataLakePoolServiceException(final int statusCode, final String s, @Nullable final String requestId, @Nullable URI uri) {
-        super(statusCode, s);
-        this.requestId = requestId;
-        this.requestUri = uri;
+    @NotNull
+    public String getState() {
+        return state;
     }
 
     @Nullable
-    public String getRequestId() {
-        return requestId;
-    }
-
-    @Nullable
-    public URI getRequestUri() {
-        return requestUri;
-    }
-
-    public void setRequestId(@Nullable String requestId) {
-        this.requestId = requestId;
+    public String getDiagnostics() {
+        return diagnostics;
     }
 }

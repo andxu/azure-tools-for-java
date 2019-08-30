@@ -30,14 +30,12 @@ import com.intellij.execution.runners.ProgramRunner
 import com.intellij.execution.ui.ConsoleView
 import com.intellij.execution.ui.ConsoleViewContentType
 import com.intellij.ide.BrowserUtil
-import com.microsoft.azure.hdinsight.common.HDInsightUtil
 import com.microsoft.azure.hdinsight.common.MessageInfoType
 import com.microsoft.azure.hdinsight.common.classifiedexception.ClassifiedExceptionFactory
 import com.microsoft.azure.hdinsight.spark.common.SparkSubmitModel
 import com.microsoft.azure.hdinsight.spark.common.YarnDiagnosticsException
 import com.microsoft.azure.hdinsight.spark.ui.ConsoleViewWithMessageBars
-import com.microsoft.azuretools.telemetrywrapper.EventType
-import com.microsoft.azuretools.telemetrywrapper.EventUtil
+import com.microsoft.azuretools.telemetry.TelemetryProperties
 import com.microsoft.azuretools.telemetrywrapper.Operation
 import com.microsoft.intellij.hdinsight.messages.HDInsightBundle
 import java.net.URI
@@ -48,10 +46,19 @@ open class SparkBatchRemoteRunState(private val sparkSubmitModel: SparkSubmitMod
         UUID.randomUUID().toString(),
         HDInsightBundle.message("SparkRunConfigRunButtonClick")!!,
         operation
-    ), SparkBatchRemoteRunProfileState {
+    ), SparkBatchRemoteRunProfileState, TelemetryProperties {
     override var remoteProcessCtrlLogHandler: SparkBatchJobProcessCtrlLogOut? = null
     override var executionResult: ExecutionResult? = null
     override var consoleView: ConsoleView? = null
+    private var isStopButtonClicked: Boolean = false
+        get() = remoteProcessCtrlLogHandler?.getUserData(ProcessHandler.TERMINATION_REQUESTED) == true
+    private var isDisconnectButtonClicked: Boolean = false
+    private var isArtifactUploaded: Boolean = false
+    private var isSubmitSucceed: Boolean = false
+    private var isJobKilled: Boolean = false
+    private var isJobRunSucceed: Boolean? = null
+    private var jobState: String? = null
+    private var diagnostics: String? = null
 
     override fun execute(executor: Executor?, programRunner: ProgramRunner<*>): ExecutionResult? {
         if (remoteProcessCtrlLogHandler == null || executionResult == null || consoleView == null) {
@@ -59,6 +66,22 @@ open class SparkBatchRemoteRunState(private val sparkSubmitModel: SparkSubmitMod
         }
 
         return executor?.let {
+            remoteProcessCtrlLogHandler!!.getEventSubject()
+                    .subscribe({
+                        when (it) {
+                            is SparkBatchJobArtifactUploadedEvent -> this.isArtifactUploaded = true
+                            is SparkBatchJobSubmittedEvent -> this.isSubmitSucceed = true
+                            is SparkBatchJobKilledEvent -> this.isJobKilled = true
+                            is SparkBatchJobFinishedEvent -> {
+                                this.isJobRunSucceed = it.isJobSucceed
+                                this.jobState = it.state
+                                this.diagnostics = it.diagnostics
+                            }
+                            is SparkBatchJobDisconnectEvent -> this.isDisconnectButtonClicked = true
+                            else -> {
+                            }
+                        }
+                    }, {})
             remoteProcessCtrlLogHandler!!.getCtrlSubject().subscribe(
                     { messageWithType ->
                         // Redirect the remote process control message to console view
@@ -86,17 +109,14 @@ open class SparkBatchRemoteRunState(private val sparkSubmitModel: SparkSubmitMod
                         val classifiedEx = ClassifiedExceptionFactory.createClassifiedException(err)
                         classifiedEx.logStackTrace()
 
-                        val errMessage = classifiedEx.message
-                        val additionalProperties = mapOf(
-                            "IsSubmitSucceed" to "false",
-                            "SubmitFailedReason" to HDInsightUtil.normalizeTelemetryMessage(errMessage))
-                        createAppInsightEvent(it, additionalProperties)
-                        createErrorEventWithComplete(it, classifiedEx, classifiedEx.errorType, additionalProperties)
+                        createAppInsightEvent(it, toProperties())
+                        createErrorEventWithComplete(it, classifiedEx, classifiedEx.errorType, toProperties())
 
+                        val errMessage = classifiedEx.message
                         consoleView!!.print("ERROR: $errMessage", ConsoleViewContentType.ERROR_OUTPUT)
                         classifiedEx.handleByUser()
                     },
-                    { onSuccess(it) })
+                    { onComplete(it) })
 
             programRunner.onProcessStarted(null, executionResult)
 
@@ -108,12 +128,20 @@ open class SparkBatchRemoteRunState(private val sparkSubmitModel: SparkSubmitMod
         return sparkSubmitModel
     }
 
-    open fun onSuccess(executor: Executor) {
-        val additionalProperties = mutableMapOf("IsSubmitSucceed" to "true")
-        if (remoteProcessCtrlLogHandler?.getUserData(ProcessHandler.TERMINATION_REQUESTED) == true) {
-            additionalProperties["isStopButtonClicked"] = "true"
-        }
-        createAppInsightEvent(executor, additionalProperties)
-        EventUtil.logEventWithComplete(EventType.info, operation, getPostEventProperties(executor, additionalProperties), null)
+    open fun onComplete(executor: Executor) {
+        createAppInsightEvent(executor, toProperties())
+        createInfoEventWithComplete(executor, toProperties())
+    }
+
+    override fun toProperties(): MutableMap<String, String> {
+        return mutableMapOf(
+                "isArtifactUploaded" to isArtifactUploaded.toString(),
+                "isJobSubmitSucceed" to isSubmitSucceed.toString(),
+                "isJobKilled" to isJobKilled.toString(),
+                "isJobRunSucceed" to if (!isSubmitSucceed || isJobKilled) "false" else (isJobRunSucceed?.toString() ?: "unknown"),
+                "livyState" to (jobState ?: "unknown"),
+                "livyDiagnostics" to (diagnostics ?: "null"),
+                "isDisconnectButtonClicked" to isDisconnectButtonClicked.toString(),
+                "isStopButtonClicked" to isStopButtonClicked.toString())
     }
 }
