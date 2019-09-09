@@ -38,9 +38,6 @@ import org.eclipse.jst.j2ee.internal.web.archive.operations.WebComponentExportDa
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.accessibility.AccessibleAdapter;
 import org.eclipse.swt.accessibility.AccessibleEvent;
-import org.eclipse.swt.browser.Browser;
-import org.eclipse.swt.browser.LocationEvent;
-import org.eclipse.swt.browser.LocationListener;
 import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.events.FocusAdapter;
 import org.eclipse.swt.events.FocusEvent;
@@ -48,7 +45,6 @@ import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Color;
-import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
@@ -119,7 +115,7 @@ public class WebAppDeployDialog extends AppServiceBaseDialog {
     private static ILog LOG = Activator.getDefault().getLog();
 
     private Table table;
-    private Browser browserAppServiceDetailes;
+    private Link browserAppServiceDetails;
     private Button btnDeployToRoot;
     private String browserFontStyle;
     private Button btnDelete;
@@ -325,31 +321,21 @@ public class WebAppDeployDialog extends AppServiceBaseDialog {
         grpAppServiceDetails.setLayoutData(gdGrpAppServiceDetails);
         grpAppServiceDetails.setText("App service details");
 
-        browserAppServiceDetailes = new Browser(grpAppServiceDetails, SWT.NONE);
-        FontData browserFontData = container.getFont().getFontData()[0];
-        browserFontStyle = String.format("font-family: '%s'; font-size: 9pt;", browserFontData.getName());
-        browserAppServiceDetailes.addLocationListener(new LocationListener() {
+        browserAppServiceDetails = new Link(grpAppServiceDetails, SWT.MULTI | SWT.FULL_SELECTION);
+        browserAppServiceDetails.addSelectionListener(new SelectionAdapter() {
             @Override
-            public void changing(LocationEvent event) {
+            public void widgetSelected(SelectionEvent e) {
                 try {
-                    if (event.location.contains(ftpLinkString)) {
-                        event.doit = false;
+                    if (e.text.equals(ftpLinkString)) {
                         showFtpCreadentialsWindow();
-                    }
-                    if (event.location.contains("http")) {
-                        event.doit = false;
-                        PlatformUI.getWorkbench().getBrowserSupport().getExternalBrowser()
-                            .openURL(new URL(event.location));
+                    } else if (e.text.contains("http")) {
+                        PlatformUI.getWorkbench().getBrowserSupport().getExternalBrowser().openURL(new URL(e.text));
                     }
                 } catch (Exception ex) {
                     ex.printStackTrace();
                     LOG.log(new Status(IStatus.ERROR, Activator.PLUGIN_ID,
-                        "changing@LocationListener@browserAppServiceDetailes@AppServiceCreateDialog", ex));
+                            "changing@LocationListener@browserAppServiceDetails@AppServiceCreateDialog", ex));
                 }
-            }
-
-            @Override
-            public void changed(LocationEvent event) {
             }
         });
 
@@ -605,7 +591,7 @@ public class WebAppDeployDialog extends AppServiceBaseDialog {
         validated();
         int selectedRow = table.getSelectionIndex();
         if (selectedRow < 0) {
-            browserAppServiceDetailes.setText("");
+            browserAppServiceDetails.setText("");
             btnDelete.setEnabled(false);
             return;
         }
@@ -626,20 +612,15 @@ public class WebAppDeployDialog extends AppServiceBaseDialog {
         AppServicePlan asp = wad.appServicePlan;
 
         StringBuilder sb = new StringBuilder();
-        sb.append("<div style=\"margin: 7px 7px 7px 7px; " + browserFontStyle + "\">");
-        sb.append(String.format("App Service name:&nbsp;<b>%s</b>;<br/>", appServiceName));
-        sb.append(String.format("Subscription name:&nbsp;<b>%s</b>;&nbsp;id:&nbsp;<b>%s</b>;<br/>",
-            sd.getSubscriptionName(), sd.getSubscriptionId()));
+        sb.append(String.format("App Service name: %s \n", appServiceName));
+        sb.append(String.format("Subscription name: %s ; id: %s \n", sd.getSubscriptionName(), sd.getSubscriptionId()));
         String aspName = asp == null ? "N/A" : asp.name();
         String aspPricingTier = asp == null ? "N/A" : asp.pricingTier().toString();
-        sb.append(String.format("App Service Plan name:&nbsp;<b>%s</b>;&nbsp;Pricing tier:&nbsp;<b>%s</b>;<br/>",
-            aspName, aspPricingTier));
-
+        sb.append(String.format("App Service Plan name: %s ; Pricing tier: %s \n", aspName, aspPricingTier));
         String link = buildSiteLink(wad.webApp, null);
-        sb.append(String.format("Link:&nbsp;<a href=\"%s\">%s</a><br/>", link, link));
-        sb.append(String.format("<a href=\"%s\">%s</a>", ftpLinkString, "Show FTP deployment credentials"));
-        sb.append("</div>");
-        browserAppServiceDetailes.setText(sb.toString());
+        sb.append(String.format("Link: <a href=\"%s\">%s</a> \n", link, link));
+        sb.append(String.format("<a href=\"%s\">%s</a> \n", ftpLinkString, "Show FTP deployment credentials"));
+        browserAppServiceDetails.setText(sb.toString());
     }
 
     private static String buildSiteLink(WebAppBase webApp, String artifactName) {
