@@ -23,51 +23,67 @@
 package com.microsoft.azuretools.authmanage;
 
 import com.google.gson.*;
+import com.microsoft.applicationinsights.core.dependencies.apachecommons.lang3.StringUtils;
 import com.microsoft.azure.AzureEnvironment;
 import com.microsoft.azuretools.authmanage.interact.IUIFactory;
 import com.microsoft.azuretools.azurecommons.helpers.NotNull;
 import com.microsoft.azuretools.azurecommons.util.FileUtil;
+import com.microsoft.azuretools.azurecommons.util.Utils;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.ArrayUtils;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 import java.util.stream.StreamSupport;
 
+import static com.microsoft.azuretools.Constants.*;
+
+
 public class CommonSettings {
+
     private static final Logger LOGGER = Logger.getLogger(AdAuthManager.class.getName());
-    public static final String authMethodDetailsFileName = "AuthMethodDetails.json";
-    public static final String COPY_CONFIGURATION_FAIL = "Fail to copy Azure Toolkit configuration from %s to %s";
+    private static final String ENV_NAME_KEY = "EnvironmentName";
+    private static final String MOVE_RESOURCE_FILE_FAIL = "Fail to move Azure Toolkit resource file %s to %s";
+    private static final String CLEAN_DEPRECATED_FOLDER_FAIL = "Fail to clean deprecated folder %s";
+    private static final String PROJECT_ARCADIA_KEY = "EnableProjectArcadia";
+    private static final List<String> RESOURCE_FILE_LIST = Arrays.asList(
+            FILE_NAME_AAD_PROVIDER,
+            FILE_NAME_AUTH_METHOD_DETAILS,
+            FILE_NAME_CORE_LIB_LOG,
+            FILE_NAME_SUBSCRIPTIONS_DETAILS_AT,
+            FILE_NAME_SUBSCRIPTIONS_DETAILS_SP,
+            FILE_NAME_SURVEY_CONFIG
+    );
 
     private static String settingsBaseDir = null;
-    private static final String AAD_PROVIDER_FILENAME = "AadProvider.json";
-    private static final String ENV_NAME_KEY = "EnvironmentName";
     private static IUIFactory uiFactory;
     private static Environment ENV = Environment.GLOBAL;
 
-    private static final String PROJECT_ARCADIA_KEY = "EnableProjectArcadia";
     public static boolean isProjectArcadiaFeatureEnabled = false;
 
     public static String getSettingsBaseDir() {
         return settingsBaseDir;
     }
 
-    public static void setUpEnvironment(@NotNull String baseDir, String deprecatedFolder) throws IOException {
-        initBaseDir(baseDir);
-        // If base dir doesn't exist or is empty, copy resources from oldBaseDir base folder
-        if (isUsingDeprecatedBaseFolder(baseDir, deprecatedFolder)) {
-            copyResourcesFromDeprecatedFolder(baseDir, deprecatedFolder);
+    public static void setUpEnvironment(@NotNull String basePath, String deprecatedPath) throws IOException {
+        // If base dir doesn't exist or is empty, move resources from oldBaseDir base folder
+        if (isUsingDeprecatedBaseFolder(basePath, deprecatedPath)) {
+            moveResourcesToBaseFolder(basePath, deprecatedPath);
         }
-        setUpEnvironment(baseDir);
+        initBaseDir(basePath);
+        setUpEnvironment(basePath);
     }
 
     public static void setUpEnvironment(@NotNull String baseDir) {
         settingsBaseDir = baseDir;
-        String aadProfilderFile = Paths.get(CommonSettings.settingsBaseDir, AAD_PROVIDER_FILENAME).toString();
+        String aadProfilderFile = Paths.get(CommonSettings.settingsBaseDir, FILE_NAME_AAD_PROVIDER).toString();
         File f = new File(aadProfilderFile);
         if (!f.exists() || !f.isFile()) {
             return;
@@ -151,8 +167,9 @@ public class CommonSettings {
         }
     }
 
-    private static boolean isUsingDeprecatedBaseFolder(String baseDir, String deprecated) {
-        return !FileUtil.isNonEmptyFolder(baseDir) && FileUtil.isNonEmptyFolder(deprecated);
+    private static boolean isUsingDeprecatedBaseFolder(String basePath, String deprecatedPath) {
+        File baseDir = new File(basePath);
+        return !baseDir.exists() && FileUtil.isNonEmptyFolder(deprecatedPath);
     }
 
     private static void initBaseDir(@NotNull String basePath) throws IOException {
@@ -160,14 +177,40 @@ public class CommonSettings {
         if(!baseDir.exists()){
             FileUtils.forceMkdir(baseDir);
         }
-        Files.setAttribute(baseDir.toPath(), "dos:hidden", true);
+        if (Utils.isWindows()) {
+            Files.setAttribute(baseDir.toPath(), "dos:hidden", true);
+        }
     }
 
-    private static void copyResourcesFromDeprecatedFolder(String baseDir, String deprecatedDir) {
+    private static void moveResourcesToBaseFolder(String basePath, String deprecatedPath) {
+        final File baseDir = new File(basePath);
+        final File deprecatedDir = new File(deprecatedPath);
+        Arrays.stream(deprecatedDir.listFiles())
+                .filter(CommonSettings::isToolkitResourceFile)
+                .forEach(file -> moveToolkitResourceFileToFolder(file, baseDir));
+        cleanDeprecatedFolder(deprecatedDir);
+    }
+
+    private static boolean isToolkitResourceFile(File file){
+        return file.isFile() && RESOURCE_FILE_LIST.stream()
+                .anyMatch(resource -> StringUtils.containsIgnoreCase(file.getName(), resource));
+    }
+
+    private static void moveToolkitResourceFileToFolder(File resourceFile, File baseDir){
         try {
-            FileUtils.copyDirectory(new File(deprecatedDir), new File(baseDir));
+            FileUtils.moveToDirectory(resourceFile, baseDir, true);
         } catch (IOException e) {
-            LOGGER.warning(String.format(COPY_CONFIGURATION_FAIL, baseDir, deprecatedDir));
+            LOGGER.warning(String.format(MOVE_RESOURCE_FILE_FAIL, resourceFile, baseDir));
+        }
+    }
+
+    private static void cleanDeprecatedFolder(File deprecatedDir) {
+        if (ArrayUtils.isEmpty(deprecatedDir.list())) {
+            try {
+                FileUtils.deleteDirectory(deprecatedDir);
+            } catch (IOException e) {
+                LOGGER.warning(String.format(CLEAN_DEPRECATED_FOLDER_FAIL, deprecatedDir.getName()));
+            }
         }
     }
 }
