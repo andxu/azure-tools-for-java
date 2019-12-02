@@ -47,6 +47,8 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.joda.deser.LocalDateTimeDeserializer;
 import com.fasterxml.jackson.datatype.joda.ser.LocalDateTimeSerializer;
 import com.microsoft.azuretools.authmanage.CommonSettings;
+import com.microsoft.azuretools.core.Activator;
+import com.microsoft.azuretools.telemetry.AppInsightsClient;
 import com.microsoft.azuretools.telemetrywrapper.EventType;
 import com.microsoft.azuretools.telemetrywrapper.EventUtil;
 import com.microsoft.azuretools.telemetrywrapper.Operation;
@@ -58,7 +60,6 @@ import rx.schedulers.Schedulers;
 public class CustomerSurveyHelper {
 
 	private static final int POP_UP_DELAY = 30;
-	;
 	private static final int INIT_SURVEY_DELAY_BY_DAY = 10;
 	private static final int PUT_OFF_DELAY_BY_DAY = 30;
 	private static final int TAKE_SURVEY_DELAY_BY_DAY = 180;
@@ -75,12 +76,8 @@ public class CustomerSurveyHelper {
 	private boolean isShown = false;
 	private SurveyConfig surveyConfig;
 	private Operation operation;
-	private String machineId;
-	private String pluginVersion;
 
-	public CustomerSurveyHelper(String machineId, String pluginVersion) {
-		this.machineId = machineId;
-		this.pluginVersion = pluginVersion;
+	public CustomerSurveyHelper() {
 		loadConfiguration();
 	}
 
@@ -184,9 +181,9 @@ public class CustomerSurveyHelper {
 		String ide = String.format("%s %s", "eclipse", version.toString());
 		String os = System.getProperty("os.name");
 		String jdk = String.format("%s %s", System.getProperty("java.vendor"), System.getProperty("java.version"));
-		String id = this.machineId;
-		String toolkit = this.pluginVersion;
-		return String.format(SURVEY_URL, toolkit, ide, os, jdk, id).replace(' ', '+');
+		String id = AppInsightsClient.getInstallationId();
+		String toolkitVersion = Activator.getDefault().getBundle().getVersion().toString();
+		return String.format(SURVEY_URL, toolkitVersion, ide, os, jdk, id).replace(' ', '+');
 
 	}
 
