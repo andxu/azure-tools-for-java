@@ -63,7 +63,7 @@ public class CustomerSurveyHelper {
 	private static final int INIT_SURVEY_DELAY_BY_DAY = 10;
 	private static final int PUT_OFF_DELAY_BY_DAY = 30;
 	private static final int TAKE_SURVEY_DELAY_BY_DAY = 180;
-	private static final int DISPOSE_TIME = 10;
+	private static final int DISPOSE_TIME = 20;
 
 	private static final String SURVEY_URL = "https://microsoft.qualtrics.com/jfe/form/SV_5nhMbnPVKPLu2pv?"
 			+ "toolkit=%s&ide=%s&os=%s&jdk=%s&id=%s";
@@ -84,40 +84,52 @@ public class CustomerSurveyHelper {
 	public void showFeedbackNotification() {
 		if (isAbleToPopUpSurvey()) {
 			Observable.timer(POP_UP_DELAY, TimeUnit.SECONDS).subscribeOn(Schedulers.io()).take(1).subscribe(next -> {
+				Display.getDefault().syncExec(() -> {
+					SurveyNotificationPopup dialog = new SurveyNotificationPopup(Display.getDefault(),
+							() -> {
+								takeSurvey();
+							},
+							() -> {
+								putOff();
+							},
+							() -> {
+								neverShowAgain();
+							});
 
-				Display.getDefault().syncExec(new Runnable() {
-					public void run() {
-						SurveyNotificationPopup dialog = new SurveyNotificationPopup(Display.getDefault(),
-								() -> {
-									takeSurvey();
-									Program.launch(getRequestUrl());
-								},  () -> {
-									putOff();
-								});
-
-						dialog.setFadingEnabled(false);
-						dialog.setDelayClose(DISPOSE_TIME * 1000);
-						dialog.open();
-						synchronized (CustomerSurveyHelper.class) {
-							if (operation != null) {
-								operation.complete();
-							}
-							operation = TelemetryManager.createOperation(SYSTEM, SURVEY);
-							operation.start();
+					dialog.setFadingEnabled(false);
+					dialog.setDelayClose(DISPOSE_TIME * 1000);
+					dialog.open();
+					synchronized (CustomerSurveyHelper.class) {
+						if (operation != null) {
+							operation.complete();
 						}
+						operation = TelemetryManager.createOperation(SYSTEM, SURVEY);
+						operation.start();
 					}
 				});
-
 			});
 		}
 	}
 
 	private void takeSurvey() {
+		Program.launch(getRequestUrl());
 		surveyConfig.surveyTimes++;
 		surveyConfig.lastSurveyDate = LocalDateTime.now();
 		surveyConfig.nextSurveyDate = LocalDateTime.now().plusDays(TAKE_SURVEY_DELAY_BY_DAY);
 		saveConfiguration();
 		sendTelemetry(TELEMETRY_VALUE_ACCEPT);
+	}
+
+	private void neverShowAgain() {
+		surveyConfig.isAcceptSurvey = false;
+		saveConfiguration();
+		sendTelemetry(TELEMETRY_VALUE_NEVER_SHOW);
+	}
+
+	private void putOff() {
+		surveyConfig.nextSurveyDate = LocalDateTime.now().plusDays(PUT_OFF_DELAY_BY_DAY);
+		saveConfiguration();
+		sendTelemetry(TELEMETRY_VALUE_PUT_OFF);
 	}
 
 	private void loadConfiguration() {
@@ -140,18 +152,6 @@ public class CustomerSurveyHelper {
 		} catch (IOException e) {
 			// swallow this exception as survey config should not bother user
 		}
-	}
-
-	public void putOff() {
-		surveyConfig.nextSurveyDate = LocalDateTime.now().plusDays(PUT_OFF_DELAY_BY_DAY);
-		saveConfiguration();
-		sendTelemetry(TELEMETRY_VALUE_PUT_OFF);
-	}
-
-	public void neverShowAgain() {
-		surveyConfig.isAcceptSurvey = false;
-		saveConfiguration();
-		sendTelemetry(TELEMETRY_VALUE_NEVER_SHOW);
 	}
 
 	private synchronized void sendTelemetry(String response) {

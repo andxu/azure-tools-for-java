@@ -26,7 +26,6 @@ import static com.microsoft.azuretools.telemetry.TelemetryConstants.SYSTEM;
 
 import com.microsoft.azuretools.telemetrywrapper.EventType;
 import com.microsoft.azuretools.telemetrywrapper.EventUtil;
-import com.microsoft.azuretools.utils.TelemetryUtils;
 
 import java.io.File;
 import java.util.Collection;
@@ -149,7 +148,7 @@ public class WACPStartUp implements IStartup {
 	        }
 			EventUtil.logEvent(EventType.info, SYSTEM, PLUGIN_LOAD, null, null);
 	        AppInsightsClient.createByType(AppInsightsClient.EventType.Plugin, "", AppInsightsConstants.Load, null, true);
-	        
+
 	        new CustomerSurveyHelper().showFeedbackNotification();
 		} catch (Exception ex) {
 			Activator.getDefault().log(ex.getMessage(), ex);
