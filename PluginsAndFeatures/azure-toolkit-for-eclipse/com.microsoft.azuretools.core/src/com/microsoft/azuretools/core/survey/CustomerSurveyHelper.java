@@ -63,6 +63,7 @@ public class CustomerSurveyHelper {
 	private static final int INIT_SURVEY_DELAY_BY_DAY = 10;
 	private static final int PUT_OFF_DELAY_BY_DAY = 30;
 	private static final int TAKE_SURVEY_DELAY_BY_DAY = 180;
+	//  Eclipse pop up window can't reset dispost time, so use a longer value here which differs IntelliJ(10s)
 	private static final int DISPOSE_TIME = 20;
 
 	private static final String SURVEY_URL = "https://microsoft.qualtrics.com/jfe/form/SV_5nhMbnPVKPLu2pv?"

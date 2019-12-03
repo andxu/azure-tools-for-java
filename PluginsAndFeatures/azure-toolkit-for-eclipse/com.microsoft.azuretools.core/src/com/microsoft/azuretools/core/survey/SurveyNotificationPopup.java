@@ -144,3 +144,4 @@ public class SurveyNotificationPopup extends AbstractNotificationPopup {
 		return SURVEY_WINDOW_TITLE;
 	}
 }
+
