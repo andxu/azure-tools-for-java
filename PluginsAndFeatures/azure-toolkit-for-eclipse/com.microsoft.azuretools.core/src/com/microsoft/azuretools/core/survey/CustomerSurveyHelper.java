@@ -184,7 +184,6 @@ public class CustomerSurveyHelper {
 		String id = AppInsightsClient.getInstallationId();
 		String toolkitVersion = Activator.getDefault().getBundle().getVersion().toString();
 		return String.format(SURVEY_URL, toolkitVersion, ide, os, jdk, id).replace(' ', '+');
-
 	}
 
 	static class SurveyConfig {
