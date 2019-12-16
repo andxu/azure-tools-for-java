@@ -20,8 +20,8 @@ branches:
   - release
   - develop
   - develop.next
+install: skip
 script:
-- 'if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then travis_wait 40 ./BuildDevint -q -e eclipse; fi'
-- 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then travis_wait 40 ./BuildDevint -q; fi'
+- 'travis_wait 40 ./gradlew buildAll --quiet'
 dist: trusty
 
