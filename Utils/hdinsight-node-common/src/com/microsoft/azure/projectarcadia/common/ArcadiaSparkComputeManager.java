@@ -110,7 +110,7 @@ public class ArcadiaSparkComputeManager implements ClusterContainer, ILogger {
         try {
             return fetchWorkSpaces().toBlocking().singleOrDefault(this);
         } catch (Exception ignored) {
-            log().warn("Got exceptions when refreshing Arcadia workspaces. " + ExceptionUtils.getStackTrace(ignored));
+            log().warn("Got exceptions when refreshing Synapse workspaces. " + ExceptionUtils.getStackTrace(ignored));
             return this;
         }
     }
@@ -123,7 +123,7 @@ public class ArcadiaSparkComputeManager implements ClusterContainer, ILogger {
                 .flatMap(workSpace ->
                         workSpace.fetchClusters()
                                 .onErrorResumeNext(err -> {
-                                    String errMsg = String.format("Got exceptions when refreshing spark computes. Workspace: %s. %s",
+                                    String errMsg = String.format("Got exceptions when refreshing spark pools. Workspace: %s. %s",
                                             workSpace.getName(), ExceptionUtils.getStackTrace(err));
                                     log().warn(errMsg);
                                     return Observable.empty();
@@ -164,7 +164,7 @@ public class ArcadiaSparkComputeManager implements ClusterContainer, ILogger {
         AzureManager azureManager = getAzureManager();
         if (azureManager == null) {
             return Observable.error(new AuthException(
-                    "Can't get Arcadia workspaces since user doesn't sign in, please sign in by Azure Explorer."));
+                    "Can't get Synapse workspaces since user doesn't sign in, please sign in by Azure Explorer."));
         }
 
         return Observable.fromCallable(() -> azureManager.getSubscriptionManager().getSelectedSubscriptionDetails())
@@ -187,7 +187,14 @@ public class ArcadiaSparkComputeManager implements ClusterContainer, ILogger {
                                 // Filter workspaces only in provisioning state or success state
                                 .map(workspace -> new ArcadiaWorkSpace(subAndWorkSpaceUriPair.getLeft(), workspace))
                                 // Run the time-consuming task concurrently in IO thread
-                                .flatMap(arcadiaWorkSpace -> arcadiaWorkSpace.get().subscribeOn(Schedulers.io()))
+                                .flatMap(arcadiaWorkSpace -> arcadiaWorkSpace
+                                        .get()
+                                        .onErrorResumeNext(err -> {
+                                            log().warn(String.format("Got exceptions when getting workspace %s details. %s",
+                                                    arcadiaWorkSpace.getName(), ExceptionUtils.getStackTrace(err)));
+                                            return Observable.empty();
+                                        })
+                                        .subscribeOn(Schedulers.io()))
                                 .filter(ArcadiaWorkSpace::isRunning)
                                 .subscribeOn(Schedulers.io())
                 )

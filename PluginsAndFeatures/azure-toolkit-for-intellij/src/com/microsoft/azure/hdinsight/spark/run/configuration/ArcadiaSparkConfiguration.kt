@@ -46,6 +46,6 @@ class ArcadiaSparkConfiguration (
     }
 
     override fun getErrorMessageClusterNull(): String {
-        return "The Spark Compute should be selected as the target for Spark application submission"
+        return "Spark pool should be selected as the target for Spark application submission"
     }
 }
