@@ -26,21 +26,21 @@
  */
 package com.microsoft.azure.hdinsight.spark.common;
 
-import com.microsoft.azure.hdinsight.common.logger.ILogger;
-import com.microsoft.azure.hdinsight.sdk.common.HttpObservable;
-import com.microsoft.azure.hdinsight.sdk.storage.adlsgen2.ADLSGen2FSOperation;
-import com.microsoft.azure.hdinsight.spark.jobs.JobUtils;
-import com.microsoft.azuretools.azurecommons.helpers.NotNull;
-import com.microsoft.azuretools.azurecommons.helpers.Nullable;
 import org.apache.http.HttpStatus;
 import rx.Observable;
 import rx.exceptions.Exceptions;
 
+import com.microsoft.azure.hdinsight.common.AbfsUri;
+import com.microsoft.azure.hdinsight.common.UriUtil;
+import com.microsoft.azure.hdinsight.common.logger.ILogger;
+import com.microsoft.azure.hdinsight.sdk.common.HttpObservable;
+import com.microsoft.azure.hdinsight.sdk.storage.adlsgen2.ADLSGen2FSOperation;
+import com.microsoft.azure.hdinsight.spark.jobs.JobUtils;
+import com.microsoft.azuretools.authmanage.AuthMethodManager;
+import com.microsoft.azuretools.azurecommons.helpers.NotNull;
+
 import java.io.File;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class ADLSGen2Deploy implements Deployable, ILogger {
     @NotNull
@@ -79,8 +79,11 @@ public class ADLSGen2Deploy implements Deployable, ILogger {
                 .onErrorReturn(err -> {
                     if (err.getMessage()!= null && (err.getMessage().contains(String.valueOf(HttpStatus.SC_FORBIDDEN))
                             || err.getMessage().contains(String.valueOf(HttpStatus.SC_NOT_FOUND)))) {
-                        throw new IllegalArgumentException("Failed to create folder " + dirPath +
-                                " when uploading Spark application artifacts with error: " + err.getMessage());
+                        // Sample destinationRootPath: https://accountName.dfs.core.windows.net/fsName/SparkSubmission/
+                        String fileSystemRootPath = UriUtil.normalizeWithSlashEnding(URI.create(destinationRootPath)).resolve("../").toString();
+                        String errorMessage = String.format("Failed to create folder %s when uploading Spark application artifacts with error: %s. %s",
+                                dirPath, err.getMessage(), getForbiddenErrorHints(fileSystemRootPath));
+                        throw new IllegalArgumentException(errorMessage);
                     } else {
                         throw Exceptions.propagate(err);
                     }
@@ -89,23 +92,16 @@ public class ADLSGen2Deploy implements Deployable, ILogger {
                 .flatMap(ignore -> op.createFile(filePath))
                 .flatMap(ignore -> op.uploadData(filePath, src))
                 .doOnNext(ignore -> log().info(String.format("Append data to file %s successfully.", filePath)))
-                .map(ignored -> {
-                    try {
-                        return getArtifactUploadedPath(filePath);
-                    } catch (URISyntaxException ex) {
-                        throw new RuntimeException(new IllegalArgumentException("Can not get valid artifact upload path" + ex.toString()));
-                    }
-                });
+                .map(ignored -> AbfsUri.parse(filePath).getUri().toString());
     }
 
-    @Nullable
-    private String getArtifactUploadedPath(String rootPath) throws URISyntaxException {
-        //convert https://fullAccountName/fileSystem/subfolder/guid/artifact.jar to /subfolder/xxxx
-        Matcher m = Pattern.compile(SparkBatchJob.AdlsGen2RestfulPathPattern).matcher(rootPath);
-        if (m.find()) {
-            return m.group("subpath");
-        }
-
-        throw new URISyntaxException(rootPath, "Cannot get valid artifact path");
+    public static String getForbiddenErrorHints(String fileSystemRootPath) {
+        String signInUserEmail = AuthMethodManager.getInstance().getAuthMethodDetails().getAccountEmail();
+        return new StringBuilder(" Please verify if\n")
+                .append("1. The ADLS Gen2 root path matches with the access key if you enter the credential in the configuration.\n")
+                .append("2. The signed in user " + signInUserEmail + " has Storage Blob Data Contributor or Storage Blob Data Owner role over the storage path " + fileSystemRootPath + ".\n")
+                .append("   If the role is recently granted, please wait a while and try again later.\n")
+                .append("   Find more details at https://docs.microsoft.com/en-us/azure/storage/common/storage-access-blobs-queues-portal#azure-ad-account")
+                .toString();
     }
 }

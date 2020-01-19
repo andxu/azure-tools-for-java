@@ -26,6 +26,7 @@ import com.microsoft.azure.hdinsight.sdk.common.HttpObservable;
 import com.microsoft.azure.hdinsight.sdk.rest.azure.storageaccounts.RemoteFile;
 import com.microsoft.azure.hdinsight.sdk.rest.azure.storageaccounts.api.GetRemoteFilesResponse;
 import com.microsoft.azuretools.azurecommons.helpers.NotNull;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.methods.HttpPatch;
 import org.apache.http.client.methods.HttpPut;
@@ -39,7 +40,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
-import java.net.URI;
 
 public class ADLSGen2FSOperation {
     private HttpObservable http;
@@ -100,7 +100,11 @@ public class ADLSGen2FSOperation {
                 .enableRecursive(false)
                 .setResource("filesystem");
 
-        return http.get(rootPath, listReqBuilder.setDirectory(relativePath).build(), null, GetRemoteFilesResponse.class)
+        return http.get(
+                StringUtils.stripEnd(rootPath, "/"),
+                listReqBuilder.setDirectory(relativePath).build(),
+                null,
+                GetRemoteFilesResponse.class)
                 .flatMap(pathList -> Observable.from(pathList.getRemoteFiles()));
     }
 
@@ -133,25 +137,5 @@ public class ADLSGen2FSOperation {
 
         return http.executeReqAndCheckStatus(req, 200, flushReqParams)
                 .map(ignore -> true);
-    }
-
-
-    //convert  https://accountname.dfs.core.windows.net/filesystem to abfs://filesystem@accountname.dfs.core.windows.net/
-    public static String convertToGen2Uri(URI root) {
-        return String.format("%s://%s@%s/", "abfs", root.getPath().substring(1), root.getAuthority());
-    }
-
-    //convert  abfs://filesystem@accountname.dfs.core.windows.net/path to https://accountname.dfs.core.windows.net/filesystem/path
-    public static String converToGen2Path(URI root) {
-        String containerPath = String.format("%s://%s/%s", "https", root.getHost(), root.getUserInfo());
-        return root.getPath().length() != 0 ? String.format("%s%s", containerPath, root.getPath()) : containerPath;
-    }
-
-    // get ab from abfs://filesystem@accountname.dfs.core.windows.net/ab
-    // get / from abfs://filesystem@accountname.dfs.core.windows.net/
-    public static String getDirectoryParam(URI root) {
-        String path = root.getPath().substring(1);
-        return path.length() == 0 ? "/" : path;
-
     }
 }

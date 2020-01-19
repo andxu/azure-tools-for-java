@@ -23,22 +23,24 @@
 package com.microsoft.azure.hdinsight.sdk.cluster.HDInsightNewAPI;
 
 import com.microsoft.azure.hdinsight.common.logger.ILogger;
+import com.microsoft.azure.hdinsight.sdk.cluster.ClusterManager;
 import com.microsoft.azure.hdinsight.sdk.cluster.ClusterOperationImpl;
+import com.microsoft.azure.hdinsight.sdk.cluster.ClusterRawInfo;
 import com.microsoft.azure.hdinsight.sdk.common.AzureManagementHttpObservable;
 import com.microsoft.azure.hdinsight.sdk.common.errorresponse.ForbiddenHttpErrorStatus;
+import com.microsoft.azure.hdinsight.sdk.common.errorresponse.GatewayTimeoutErrorStatus;
 import com.microsoft.azure.hdinsight.sdk.common.errorresponse.HttpErrorStatus;
 import com.microsoft.azure.hdinsight.sdk.common.errorresponse.NotFoundHttpErrorStatus;
-import com.microsoft.azure.hdinsight.spark.common.SparkBatchSubmission;
+import com.microsoft.azuretools.adauth.AuthException;
 import com.microsoft.azuretools.authmanage.AuthMethodManager;
 import com.microsoft.azuretools.authmanage.models.SubscriptionDetail;
 import com.microsoft.azuretools.azurecommons.helpers.AzureCmdException;
 import com.microsoft.azuretools.azurecommons.helpers.NotNull;
 import com.microsoft.azuretools.azurecommons.helpers.Nullable;
+import com.microsoft.azuretools.sdkmanage.AzureManager;
 import com.microsoft.azuretools.telemetry.AppInsightsClient;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.apache.http.Header;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.message.BasicHeader;
 import rx.Observable;
 
 import java.io.IOException;
@@ -63,8 +65,18 @@ public class ClusterOperationNewAPIImpl extends ClusterOperationImpl implements 
         return this.http;
     }
 
+    private AzureManager getAzureManager() throws IOException {
+        AzureManager azureManager = AuthMethodManager.getInstance().getAzureManager();
+
+        if (azureManager == null) {
+            throw new AuthException("Not signed in. Can't send out the request.");
+        }
+
+        return azureManager;
+    }
+
     public Observable<Map> getClusterCoreSiteRequest(@NotNull final String clusterId) throws IOException {
-        String managementURI = AuthMethodManager.getInstance().getAzureManager().getManagementURI();
+        String managementURI = getAzureManager().getManagementURI();
         String url = URI.create(managementURI)
                 .resolve(clusterId.replaceAll("/+$", "") + "/configurations/core-site").toString();
         return getHttp()
@@ -75,7 +87,7 @@ public class ClusterOperationNewAPIImpl extends ClusterOperationImpl implements 
     private Observable<ClusterConfiguration> getClusterConfigurationRequest(
             @NotNull final String clusterId) {
         try {
-            String managementURI = AuthMethodManager.getInstance().getAzureManager().getManagementURI();
+            String managementURI = getAzureManager().getManagementURI();
             String url = URI.create(managementURI)
                     .resolve(clusterId.replaceAll("/+$", "") + "/configurations").toString();
             StringEntity entity = new StringEntity("", StandardCharsets.UTF_8);
@@ -90,10 +102,12 @@ public class ClusterOperationNewAPIImpl extends ClusterOperationImpl implements 
         }
     }
 
-    public Observable<Boolean> isProbeGetConfigurationSucceed(final String clusterId) {
+    public Observable<Boolean> isProbeGetConfigurationSucceed(final ClusterRawInfo clusterRawInfo) {
+        String clusterId = clusterRawInfo.getId();
+
         return getClusterConfigurationRequest(clusterId)
                 .map(clusterConfiguration -> {
-                    if (isValid(clusterConfiguration, clusterId)) {
+                    if (isClusterConfigurationValid(clusterRawInfo, clusterConfiguration)) {
                         setRoleType(HDInsightUserRoleType.OWNER);
                         return true;
                     } else {
@@ -123,10 +137,13 @@ public class ClusterOperationNewAPIImpl extends ClusterOperationImpl implements 
                     } else {
                         if (err instanceof HttpErrorStatus) {
                             HDInsightNewApiUnavailableException ex = new HDInsightNewApiUnavailableException(err);
-                            if (!(err instanceof NotFoundHttpErrorStatus)) {
-                                log().error("Error getting cluster configurations with NEW HDInsight API. " + clusterId, ex);
+                            if (!(err instanceof NotFoundHttpErrorStatus
+                                    || err instanceof GatewayTimeoutErrorStatus)) {
+                                log().error(String.format(
+                                        "Error getting cluster configurations with NEW HDInsight API: %s, %s",
+                                        clusterId,
+                                        ((HttpErrorStatus) err).getErrorDetails()), ex);
                             }
-                            log().warn(((HttpErrorStatus) err).getErrorDetails());
 
                             final Map<String, String> properties = new HashMap<>();
                             properties.put("ClusterID", clusterId);
@@ -142,28 +159,23 @@ public class ClusterOperationNewAPIImpl extends ClusterOperationImpl implements 
                 });
     }
 
-    private boolean isValid(ClusterConfiguration clusterConfiguration, String clusterId) {
+    private boolean isClusterConfigurationValid(ClusterRawInfo clusterRawInfo, @Nullable ClusterConfiguration clusterConfiguration) {
         if (clusterConfiguration == null
                 || clusterConfiguration.getConfigurations() == null
                 || clusterConfiguration.getConfigurations().getGateway() == null) {
             return false;
         }
 
-        Gateway gw = clusterConfiguration.getConfigurations().getGateway();
-        if (gw.getUsername() != null && gw.getPassword() != null) {
+        if (ClusterManager.getInstance().isMfaEspCluster(clusterRawInfo)) {
             return true;
         }
 
-        try {
-            String clusterName = clusterId.substring(clusterId.lastIndexOf("/") + 1);
-            if (SparkBatchSubmission.getInstance().negotiateAuthMethod(String.format("https://%s.azurehdinsight.net", clusterName)) != null) {
-                return true;
-            }
-        } catch (IOException ignore) {
-            log().warn(ignore.toString());
+        Gateway gw = clusterConfiguration.getConfigurations().getGateway();
+        if (Boolean.parseBoolean(gw.getIsEnabled())) {
+            return true;
         }
 
-        return false;
+        return gw.getUsername() != null || gw.getPassword() != null;
     }
 
     /**

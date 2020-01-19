@@ -30,7 +30,9 @@ package com.microsoft.azure.hdinsight.spark.common
 import com.intellij.util.xmlb.annotations.Attribute
 import com.intellij.util.xmlb.annotations.Tag
 import com.intellij.util.xmlb.annotations.Transient
+import com.microsoft.azure.hdinsight.common.AbfsUri
 import com.microsoft.azure.hdinsight.common.logger.ILogger
+import javax.swing.ComboBoxModel
 import javax.swing.DefaultComboBoxModel
 
 @Tag("job_upload_storage")
@@ -42,16 +44,16 @@ class SparkSubmitJobUploadStorageModel: ILogger {
     var gen2Account: String? = null
 
     // model for ADLS Gen 2 storage type
-    @Attribute("adls_gen2_root_path")
-    var gen2RootPath: String? = null
+    @Attribute("adls_gen2_root_path", converter = AbfsUriConverter::class)
+    var gen2RootPath: AbfsUri? = null
 
     @get:Transient @set:Transient var storageKey: String? = null
 
     @get:Transient @set:Transient var accessKey: String? = null
 
-    @get:Transient @set:Transient var containersModel: DefaultComboBoxModel<String> = DefaultComboBoxModel()
+    @get:Transient @set:Transient var containersModel: ComboBoxModel<Any> = DefaultComboBoxModel()
 
-    @get:Transient @set:Transient var subscriptionsModel: DefaultComboBoxModel<String> = DefaultComboBoxModel()
+    @get:Transient @set:Transient var subscriptionsModel: ComboBoxModel<Any> = DefaultComboBoxModel()
 
     @Attribute("upload_path")
     var uploadPath: String? = null

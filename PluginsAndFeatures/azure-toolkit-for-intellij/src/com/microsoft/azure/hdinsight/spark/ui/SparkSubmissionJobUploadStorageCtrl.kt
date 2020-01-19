@@ -28,6 +28,7 @@
 package com.microsoft.azure.hdinsight.spark.ui
 
 import com.intellij.ui.DocumentAdapter
+import com.microsoft.azure.hdinsight.common.AbfsUri
 import com.microsoft.azure.hdinsight.common.ClusterManagerEx
 import com.microsoft.azure.hdinsight.common.logger.ILogger
 import com.microsoft.azure.hdinsight.sdk.cluster.IClusterDetail
@@ -37,7 +38,6 @@ import com.microsoft.azure.hdinsight.sdk.storage.ADLSGen2StorageAccount
 import com.microsoft.azure.hdinsight.sdk.storage.ADLSStorageAccount
 import com.microsoft.azure.hdinsight.sdk.storage.HDStorageAccount
 import com.microsoft.azure.hdinsight.sdk.storage.IHDIStorageAccount
-import com.microsoft.azure.hdinsight.sdk.storage.adlsgen2.ADLSGen2FSOperation
 import com.microsoft.azure.hdinsight.spark.common.SparkSubmitJobUploadStorageModel
 import com.microsoft.azure.storage.blob.BlobRequestOptions
 import com.microsoft.azuretools.authmanage.AuthMethodManager
@@ -51,7 +51,6 @@ import rx.schedulers.Schedulers
 import java.awt.event.FocusAdapter
 import java.awt.event.FocusEvent
 import java.awt.event.ItemEvent
-import java.net.URI
 import java.util.stream.Collectors
 import javax.swing.ComboBoxModel
 import javax.swing.DefaultComboBoxModel
@@ -134,11 +133,14 @@ class SparkSubmissionJobUploadStorageCtrl(val view: SparkSubmissionJobUploadStor
             }
         }
 
-        view.storagePanel.adlsGen2Card.gen2RootPathField.addFocusListener(object : FocusAdapter() {
-            override fun focusLost(e: FocusEvent?) {
-                view.viewModel.uploadStorage.storageCheckSubject.onNext(StorageCheckPathFocusLostEvent("ADLS GEN2"))
+        arrayOf(view.storagePanel.adlsGen2Card.gen2RootPathField, view.storagePanel.adlsGen2OAuthCard.gen2RootPathField)
+            .forEach {
+                it.addFocusListener(object : FocusAdapter() {
+                    override fun focusLost(e: FocusEvent?) {
+                        view.viewModel.uploadStorage.storageCheckSubject.onNext(StorageCheckPathFocusLostEvent("ADLS GEN2"))
+                    }
+                })
             }
-        })
     }
 
     private fun refreshSubscriptions(): Observable<SparkSubmitJobUploadStorageModel> {
@@ -164,7 +166,7 @@ class SparkSubmissionJobUploadStorageCtrl(val view: SparkSubmissionJobUploadStor
                                 if (subscriptionNameList.size > 0) {
                                     subscriptionsModel = DefaultComboBoxModel(subscriptionNameList.toTypedArray())
                                     subscriptionsModel.selectedItem = subscriptionsModel.getElementAt(0)
-                                    selectedSubscription = subscriptionsModel.getElementAt(0)
+                                    selectedSubscription = subscriptionsModel.getElementAt(0)?.toString()
                                     errorMsg = null
                                 } else {
                                     errorMsg = "No subscriptions found in this storage account"
@@ -211,7 +213,7 @@ class SparkSubmissionJobUploadStorageCtrl(val view: SparkSubmissionJobUploadStor
                                 if (containers.isNotEmpty()) {
                                     containersModel = DefaultComboBoxModel(containers)
                                     containersModel.selectedItem = containersModel.getElementAt(0)
-                                    selectedContainer = containersModel.getElementAt(0)
+                                    selectedContainer = containersModel.getElementAt(0)?.toString()
                                     uploadPath = getAzureBlobStoragePath(ClusterManagerEx.getInstance().getBlobFullName(storageAccount), selectedContainer, HDStorageAccount.DefaultScheme)
 
                                 errorMsg = null
@@ -237,7 +239,7 @@ class SparkSubmissionJobUploadStorageCtrl(val view: SparkSubmissionJobUploadStor
         return Observable.just(SparkSubmitJobUploadStorageModel())
             .doOnNext(view::getData)
             // set error message to prevent user from applying the change when updating is not completed
-            .map { it.apply { "updating upload path is not completed" } }
+            .map { it.apply { errorMsg = "updating upload path is not completed" } }
             .doOnNext(view::setData)
             .observeOn(Schedulers.io())
             .map { toUpdate ->
@@ -259,14 +261,14 @@ class SparkSubmissionJobUploadStorageCtrl(val view: SparkSubmissionJobUploadStor
             }
     }
 
-    override fun getAzureBlobStoragePath(fullStorageBlobName: String?, container: String?, scheme: String): String? {
-        if (StringUtils.isBlank(fullStorageBlobName) || StringUtils.isBlank(container) || scheme.isNullOrBlank())
+    override fun getAzureBlobStoragePath(fullStorageBlobName: String?, container: String?, schema: String): String? {
+        if (StringUtils.isBlank(fullStorageBlobName) || StringUtils.isBlank(container) || schema.isBlank())
             throw IllegalArgumentException("Blob Name ,container and scheme name cannot be empty")
 
-        val rawStoragePath = "$scheme://$container@$fullStorageBlobName"
-        return if (scheme!!.startsWith(ADLSGen2StorageAccount.DefaultScheme))
-            "${ADLSGen2FSOperation.converToGen2Path(URI.create(rawStoragePath))}/${SparkSubmissionContentPanel.Constants.submissionFolder}/"
-        else  "$rawStoragePath/${SparkSubmissionContentPanel.Constants.submissionFolder}/"
+        val rawStoragePath = "$schema://$container@$fullStorageBlobName"
+        return if (schema.startsWith(ADLSGen2StorageAccount.DefaultScheme))
+            AbfsUri.parse("$rawStoragePath/${SparkSubmissionContentPanel.Constants.submissionFolder}/").url.toString()
+        else "$rawStoragePath/${SparkSubmissionContentPanel.Constants.submissionFolder}/"
     }
 
     override fun getUploadPath(account: IHDIStorageAccount): String? =

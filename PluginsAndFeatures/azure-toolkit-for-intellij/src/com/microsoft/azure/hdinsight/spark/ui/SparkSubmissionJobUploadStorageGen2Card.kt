@@ -28,6 +28,7 @@ import com.intellij.uiDesigner.core.GridConstraints.ANCHOR_WEST
 import com.microsoft.azure.hdinsight.spark.common.SparkSubmitStorageType
 import com.microsoft.azuretools.ijidea.ui.HintTextField
 import com.microsoft.intellij.forms.dsl.panel
+import java.awt.Dimension
 import javax.swing.JLabel
 
 class SparkSubmissionJobUploadStorageGen2Card : SparkSubmissionJobUploadStorageBasicCard() {
@@ -35,9 +36,12 @@ class SparkSubmissionJobUploadStorageGen2Card : SparkSubmissionJobUploadStorageB
     private val storageKeyTip = "The access key of the default storage account, which can be found from HDInsight cluster storage accounts of Azure portal."
     private val storageKeyLabel = JLabel("Access Key").apply { toolTipText = storageKeyTip }
     val storageKeyField = ExpandableTextField().apply { toolTipText = storageKeyTip; name = "gen2CardstorageKeyField" }
-    private val gen2RootPathTip = "e.g. https://<mystorageaccount>.dfs.core.windows.net/<root path>."
+    private val gen2RootPathTip = "e.g. abfs://<file_system>@<account_name>.dfs.core.windows.net/<path>"
     private val gen2RootPathLabel = JLabel("ADLS GEN2 Root Path")
-    val gen2RootPathField = HintTextField (gen2RootPathTip).apply { name = "gen2CardRootPathField" }
+    val gen2RootPathField = HintTextField (gen2RootPathTip).apply {
+        name = "gen2CardRootPathField"
+        preferredSize = Dimension(500, 0)
+    }
 
     init {
         val formBuilder = panel {
