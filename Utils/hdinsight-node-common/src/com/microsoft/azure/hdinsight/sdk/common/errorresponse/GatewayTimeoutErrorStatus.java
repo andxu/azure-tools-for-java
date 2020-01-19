@@ -20,41 +20,15 @@
  * SOFTWARE.
  */
 
-package com.microsoft.intellij.helpers.containerregistry;
+package com.microsoft.azure.hdinsight.sdk.common.errorresponse;
 
-import com.intellij.openapi.fileEditor.FileEditor;
-import com.intellij.openapi.fileEditor.FileEditorPolicy;
-import com.intellij.openapi.fileEditor.FileEditorProvider;
-import com.intellij.openapi.project.DumbAware;
-import com.intellij.openapi.project.Project;
-import com.intellij.openapi.vfs.VirtualFile;
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
 
-import org.jetbrains.annotations.NotNull;
+import com.microsoft.azuretools.azurecommons.helpers.Nullable;
 
-public class ContainerRegistryPropertyViewProvider implements FileEditorProvider, DumbAware {
-
-    public static final String TYPE = "CONTAINER_REGISTRY_PROPERTY_VIEW";
-
-    @Override
-    public boolean accept(@NotNull Project project, @NotNull VirtualFile virtualFile) {
-        return virtualFile.getFileType().getName().equals(TYPE);
-    }
-
-    @NotNull
-    @Override
-    public FileEditor createEditor(@NotNull Project project, @NotNull VirtualFile virtualFile) {
-        return new ContainerRegistryPropertyView(project);
-    }
-
-    @NotNull
-    @Override
-    public String getEditorTypeId() {
-        return TYPE;
-    }
-
-    @NotNull
-    @Override
-    public FileEditorPolicy getPolicy() {
-        return FileEditorPolicy.HIDE_DEFAULT_EDITOR;
+public class GatewayTimeoutErrorStatus extends HttpErrorStatus {
+    public GatewayTimeoutErrorStatus(String message, @Nullable Header[] headers, @Nullable HttpEntity entity) {
+        super(504, message, headers, entity);
     }
 }
