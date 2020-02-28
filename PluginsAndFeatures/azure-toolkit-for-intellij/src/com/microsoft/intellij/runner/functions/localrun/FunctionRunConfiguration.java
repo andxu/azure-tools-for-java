@@ -26,7 +26,12 @@ package com.microsoft.intellij.runner.functions.localrun;
 import com.google.gson.JsonObject;
 import com.intellij.execution.ExecutionException;
 import com.intellij.execution.Executor;
-import com.intellij.execution.configurations.*;
+import com.intellij.execution.configurations.ConfigurationFactory;
+import com.intellij.execution.configurations.JavaRunConfigurationModule;
+import com.intellij.execution.configurations.LocatableConfiguration;
+import com.intellij.execution.configurations.RunConfiguration;
+import com.intellij.execution.configurations.RunProfileState;
+import com.intellij.execution.configurations.RunProfileWithCompileBeforeLaunchOption;
 import com.intellij.execution.runners.ExecutionEnvironment;
 import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.module.Module;
@@ -39,6 +44,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Map;
@@ -207,7 +213,16 @@ public class FunctionRunConfiguration extends AzureRunConfigurationBase<Function
 
     @Override
     public void validate() throws ConfigurationException {
-
+        if (getModel() == null) {
+            throw new ConfigurationException("Please specify module");
+        }
+        if (StringUtils.isEmpty(getFuncPath())) {
+            throw new ConfigurationException("Please specify function cli path");
+        }
+        final File func = new File(getFuncPath());
+        if (!func.exists() || !func.isFile() || !func.getName().contains("func")) {
+            throw new ConfigurationException("Please specify correct function cli path");
+        }
     }
 
     @Override

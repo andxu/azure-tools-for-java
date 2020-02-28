@@ -34,12 +34,15 @@ import com.intellij.openapi.actionSystem.DataKeys;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.project.Project;
+import com.microsoft.azuretools.authmanage.AuthMethodManager;
+import com.microsoft.azuretools.ijidea.actions.AzureSignInAction;
 import com.microsoft.azuretools.ijidea.utility.AzureAnAction;
 import com.microsoft.azuretools.telemetrywrapper.Operation;
 import com.microsoft.intellij.actions.RunConfigurationUtils;
 import com.microsoft.intellij.runner.functions.AzureFunctionSupportConfigurationType;
 import com.microsoft.intellij.runner.functions.core.FunctionUtils;
 import com.microsoft.intellij.runner.functions.deploy.FunctionDeploymentConfigurationFactory;
+import com.microsoft.intellij.util.PluginUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -54,7 +57,14 @@ public class DeployFunctionAction extends AzureAnAction {
     @Override
     public boolean onActionPerformed(@NotNull AnActionEvent anActionEvent, @Nullable Operation operation) {
         final Module module = DataKeys.MODULE.getData(anActionEvent.getDataContext());
-        ApplicationManager.getApplication().invokeLater(() -> runConfiguration(module));
+        try {
+            if (AzureSignInAction.doSignIn(AuthMethodManager.getInstance(), module.getProject())) {
+                ApplicationManager.getApplication().invokeLater(() -> runConfiguration(module));
+            }
+        } catch (Exception e) {
+            ApplicationManager.getApplication().invokeLater(() ->
+                    PluginUtil.displayErrorDialog("Failed to deploy function", e.getMessage()));
+        }
         return true;
     }
 
