@@ -34,7 +34,7 @@ class ArcadiaSparkConfiguration (
         factory: ArcadiaSparkConfigurationFactory)
     : LivySparkBatchJobRunConfiguration(project, model, factory, name) {
     override fun getSparkApplicationType(): SparkApplicationType {
-        val arcadiaModel = module.model.submitModel as ArcadiaSparkSubmitModel
+        val arcadiaModel = model.submitModel as ArcadiaSparkSubmitModel
         return arcadiaModel.sparkApplicationType
     }
 
