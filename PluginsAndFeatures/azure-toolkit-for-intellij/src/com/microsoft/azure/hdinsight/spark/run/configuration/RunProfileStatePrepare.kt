@@ -20,16 +20,19 @@
  * SOFTWARE.
  */
 
-package com.microsoft.azure.hdinsight.spark.ui
+package com.microsoft.azure.hdinsight.spark.run.configuration
 
-import com.intellij.execution.configurations.RuntimeConfigurationError
-import com.microsoft.azure.hdinsight.spark.common.SparkSubmitStorageType.NOT_SUPPORT_STORAGE_TYPE
+import com.intellij.execution.configurations.RunnerSettings
+import com.intellij.execution.runners.ProgramRunner
+import rx.Observable
 
-class SparkSubmissionJobUploadStorageClusterNotSupportStorageCard
-    : SparkSubmissionJobUploadStorageBasicCard(NOT_SUPPORT_STORAGE_TYPE.description) {
-    override fun createViewModel(): ViewModel = object: ViewModel() {
-        override fun getValidatedStorageUploadPath(config: Model): String {
-            throw RuntimeConfigurationError("Storage type is not supported")
-        }
-    }
+interface RunProfileStatePrepare<T> {
+    /**
+     * Prepare some internal data which may be heavy cost, such as IO operation, for Run Profile State before
+     * invoking the method [com.intellij.execution.configurations.RunProfile.getState].
+     *
+     * @param runner: The target run profile runner
+     * @return: An Observable of produced internal data
+     */
+    fun prepare(runner: ProgramRunner<RunnerSettings>): Observable<T>
 }
