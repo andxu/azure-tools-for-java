@@ -22,7 +22,7 @@ repositories {
 azurefunctions {
     // subscription = '<your subscription id>'
     resourceGroup = 'java-functions-group'
-    appName = '$(artifactId)-$(randomNumber)' // please rename the function name
+    appName = '$(artifactId)-$(timestamp)' // please rename the function name
     pricingTier = 'Consumption' // refers https://github.com/microsoft/azure-maven-plugins/tree/develop/azure-functions-maven-plugin#supported-pricing-tiers for all valid values
     region = 'westus'
     runtime {

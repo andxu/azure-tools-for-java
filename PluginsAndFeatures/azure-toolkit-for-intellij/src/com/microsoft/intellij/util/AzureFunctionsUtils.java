@@ -98,7 +98,7 @@ public class AzureFunctionsUtils {
         map.put("groupId", groupId);
         map.put("artifactId", artifactId);
         map.put("version", version);
-        map.put("randomNumber", Long.toString(new Date().getTime()));
+        map.put("timestamp", Long.toString(new Date().getTime()));
         for (String file : Arrays.asList(".gitignore", "host.json", "local.settings.json")) {
             copyResourceFileWithVariableSubstituted(file, map, folder);
         }
