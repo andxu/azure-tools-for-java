@@ -1,4 +1,4 @@
-package $packageName$;
+package $(packageName);
 
 import com.microsoft.azure.functions.annotation.*;
 import com.microsoft.azure.functions.*;
@@ -6,7 +6,7 @@ import com.microsoft.azure.functions.*;
 /**
  * Azure Functions with Azure Storage Queue trigger.
  */
-public class $className$ {
+public class $(className) {
     /**
      * This function will be invoked when a new message is received at the specified path. The message contents are provided as input to this function.
      */

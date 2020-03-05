@@ -112,24 +112,19 @@ public class FunctionsModuleBuilder extends JavaModuleBuilder {
         }
         final Project project = rootModel.getProject();
         runWhenInitialized(rootModel.getProject(), () -> {
+            final String tool = wizardContext.getUserData(AzureFunctionsConstants.WIZARD_TOOL_KEY);
             final String groupId = wizardContext.getUserData(AzureFunctionsConstants.WIZARD_GROUPID_KEY);
             final String artifactId = wizardContext.getUserData(AzureFunctionsConstants.WIZARD_ARTIFACTID_KEY);
             final String version = wizardContext.getUserData(AzureFunctionsConstants.WIZARD_VERSION_KEY);
             final String packageName = wizardContext.getUserData(AzureFunctionsConstants.WIZARD_PACKAGE_NAME_KEY);
             final String[] triggers = wizardContext.getUserData(AzureFunctionsConstants.WIZARD_TRIGGERS_KEY);
-            File tempFolder = null;
+            File tempProjectFolder = null;
             try {
-                tempFolder = AzureFunctionsUtils.createMavenProjectToTempFolder(groupId, artifactId, version,
-                        packageName);
-                if (tempFolder != null) {
-                    final File tempProjectFolder = new File(tempFolder, artifactId);
+                tempProjectFolder = AzureFunctionsUtils.createFunctionProjectToTempFolder(groupId, artifactId, version, tool);
+                if (tempProjectFolder != null) {
                     if (tempProjectFolder.exists() && tempProjectFolder.isDirectory()) {
                         final File moduleFile = new File(getContentEntryPath());
-
-                        // delete existing source and test files
                         final File srcFolder = Paths.get(tempProjectFolder.getAbsolutePath(), "src/main/java").toFile();
-                        FileUtils.deleteQuietly(srcFolder);
-                        FileUtils.deleteQuietly(Paths.get(tempProjectFolder.getAbsolutePath(), "src/test/java").toFile());
 
                         for (final String trigger : triggers) {
                             // class name like HttpTriggerFunction
@@ -155,9 +150,9 @@ public class FunctionsModuleBuilder extends JavaModuleBuilder {
             } catch (final Exception e) {
                 PluginUtil.displayErrorDialogAndLog("Error", "Cannot create Azure Function Project in Java.", e);
             } finally {
-                if (tempFolder != null && tempFolder.isDirectory()) {
+                if (tempProjectFolder != null && tempProjectFolder.isDirectory()) {
                     try {
-                        FileUtils.deleteDirectory(tempFolder);
+                        FileUtils.deleteDirectory(tempProjectFolder);
                     } catch (final IOException e) {
                         // ignore
                     }
