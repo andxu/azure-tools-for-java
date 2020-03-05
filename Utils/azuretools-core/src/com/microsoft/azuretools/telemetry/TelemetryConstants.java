@@ -29,6 +29,7 @@ public class TelemetryConstants {
 
     // production name
     public static final String WEBAPP = "webapp";
+    public static final String FUNCTION = "function";
     public static final String ACR = "acr";
     public static final String ARM = "arm";
     public static final String DOCKER = "docker";
@@ -66,6 +67,18 @@ public class TelemetryConstants {
     public static final String RESTART_WEBAPP = "restart-webapp";
     public static final String WEBAPP_SHOWPROP = "showprop-webapp";
     public static final String WEBAPP_OPEN_INBROWSER = "open-inbrowser-webapp";
+    public static final String TRIGGER_FUNCTION = "trigger-function";
+    public static final String ENABLE_FUNCTION = "enable-function";
+    public static final String DISABLE_FUNCTION = "disable-function";
+    public static final String RUN_FUNCTION_APP = "run-function-app";
+    public static final String CREATE_FUNCTION_APP = "create-function-app";
+    public static final String DEPLOY_FUNCTION_APP = "deploy-function-app";
+    public static final String DELETE_FUNCTION_APP = "delete-function-app";
+    public static final String START_FUNCTION_APP = "start-function-app";
+    public static final String STOP_FUNCTION_APP = "stop-function-app";
+    public static final String RESTART_FUNCTION_APP = "restart-function-app";
+    public static final String SHOWPROP_FUNCTION_APP = "showprop-function-app";
+    public static final String OPEN_INBROWSER_FUNCTION_APP = "open-inbrowser-function-app";
     public static final String CREATE_DOCKER_FILE = "create-dockerfile";
     public static final String CREATE_DOCKER_HOST = "create-docker-host";
     public static final String DEPLOY_DOCKER_HOST = "deploy-docker-host";
