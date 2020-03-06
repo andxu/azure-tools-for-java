@@ -42,7 +42,9 @@ import com.microsoft.azure.management.resources.Subscription;
 import com.microsoft.azuretools.authmanage.AuthMethodManager;
 import com.microsoft.azuretools.core.mvp.model.AzureMvpModel;
 import com.microsoft.azuretools.telemetry.TelemetryProperties;
+import com.microsoft.intellij.util.AzureFunctionsUtils;
 import com.microsoft.intellij.util.ValidationUtils;
+import com.microsoft.intellij.wizards.functions.module.FunctionTriggerChooserStep;
 import com.microsoft.tooling.msservices.components.DefaultLoader;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.Nullable;
@@ -227,7 +229,11 @@ public class CreateFunctionForm extends DialogWrapper implements TelemetryProper
         Map<String, String> result = new HashMap<>();
         result.put("functionName", txtFunctionName.getText());
         result.put("packageName", txtPackageName.getText());
-        result.put("className", StringUtils.capitalize(txtFunctionName.getText()));
+        String className = AzureFunctionsUtils.normalizeClassName(StringUtils.capitalize(txtFunctionName.getText()));
+        if (FunctionTriggerChooserStep.SUPPORTED_TRIGGERS.contains(className)) {
+            className = className + "1"; // avoid duplicate class with function annotation
+        }
+        result.put("className", className);
         switch ((String) cbTriggerType.getSelectedItem()) {
             case HTTP_TRIGGER:
                 result.put("authLevel", cbAuthLevel.getSelectedItem().toString());

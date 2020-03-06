@@ -1,4 +1,4 @@
-package $packageName$;
+package $(packageName);
 
 import com.microsoft.azure.functions.annotation.*;
 import com.microsoft.azure.functions.*;
@@ -6,7 +6,7 @@ import com.microsoft.azure.functions.*;
 /**
  * Azure Functions with Cosmos DB trigger.
  */
-public class $className$ {
+public class $(className) {
     /**
      * This function will be invoked when there are inserts or updates in the specified database and collection.
      */

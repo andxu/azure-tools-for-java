@@ -49,7 +49,7 @@ import java.util.List;
 public class FunctionTriggerChooserStep extends ModuleWizardStep {
     private final WizardContext wizardContext;
     private JTable table;
-    private static final List<String> SUPPORTED_TRIGGERS = Arrays.asList("HttpTrigger", "BlobTrigger", "QueueTrigger", "TimerTrigger", "EventHubTrigger");
+    public static final List<String> SUPPORTED_TRIGGERS = Arrays.asList("HttpTrigger", "BlobTrigger", "QueueTrigger", "TimerTrigger", "EventHubTrigger");
     private static final List<String> INITIAL_SELECTED_TRIGGERS = Arrays.asList("HttpTrigger");
 
     FunctionTriggerChooserStep(final WizardContext wizardContext) {
