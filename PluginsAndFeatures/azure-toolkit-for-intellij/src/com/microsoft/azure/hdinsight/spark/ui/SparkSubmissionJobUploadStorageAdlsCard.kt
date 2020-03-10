@@ -114,7 +114,7 @@ class SparkSubmissionJobUploadStorageAdlsCard
         }
 
         comboBox.renderer = object : SimpleListCellRenderer<Any>() {
-            override fun customize(list: JList<out Any>?, value: Any?, index: Int, selected: Boolean, hasFocus: Boolean) {
+            override fun customize(list: JList<out Any>, value: Any?, index: Int, selected: Boolean, hasFocus: Boolean) {
                 font = if (value != null) {
                     text = value.toString()
                     font.deriveFont(Font.PLAIN)
