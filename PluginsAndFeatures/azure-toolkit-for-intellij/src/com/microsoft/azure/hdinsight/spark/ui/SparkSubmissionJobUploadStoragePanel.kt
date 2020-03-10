@@ -101,7 +101,7 @@ open class SparkSubmissionJobUploadStoragePanel
         }
 
         renderer = object: SimpleListCellRenderer<SparkSubmitStorageType>() {
-            override fun customize(list: JList<out SparkSubmitStorageType>?, type: SparkSubmitStorageType?, index: Int, selected: Boolean, hasFocus: Boolean) {
+            override fun customize(list: JList<out SparkSubmitStorageType>, type: SparkSubmitStorageType?, index: Int, selected: Boolean, hasFocus: Boolean) {
                 text = type?.description ?: "<No storage type selected>"
             }
         }
