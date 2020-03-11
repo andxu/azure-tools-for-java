@@ -22,6 +22,7 @@
 
 package com.microsoft.intellij.runner.functions.component;
 
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.ui.PopupMenuListenerAdapter;
 import com.intellij.ui.SimpleListCellRenderer;
 import com.microsoft.azure.management.appservice.AppServicePlan;
@@ -47,6 +48,9 @@ import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static com.microsoft.intellij.runner.functions.component.NewAppServicePlanDialog.CONSUMPTION;
+import static com.microsoft.intellij.runner.functions.component.NewAppServicePlanDialog.CONSUMPTION_PRICING_TIER;
 
 public class AppServicePlanPanel extends JPanel {
     private static final String CREATE_APP_SERVICE_PLAN = "Create app service plan...";
@@ -140,12 +144,13 @@ public class AppServicePlanPanel extends JPanel {
             selectedAppServicePlan = (AppServicePlanWrapper) selectedObject;
             showAppServicePlan(selectedAppServicePlan);
         } else if (CREATE_APP_SERVICE_PLAN.equals(selectedObject)) {
-            createAppServicePlan();
+            ApplicationManager.getApplication().invokeLater(this::createAppServicePlan);
         }
     }
 
     private void createAppServicePlan() {
         cbAppServicePlan.setSelectedItem(null);
+        cbAppServicePlan.setPopupVisible(false);
         final NewAppServicePlanDialog dialog = new NewAppServicePlanDialog(subscriptionId);
         dialog.pack();
         dialog.setLocationRelativeTo(this);
@@ -170,7 +175,8 @@ public class AppServicePlanPanel extends JPanel {
             lblPricingTier.setText("N/A");
         } else {
             lblLocation.setText(appServicePlanWrapper.getRegion().name());
-            lblPricingTier.setText(appServicePlanWrapper.getPricingTier().toString());
+            final PricingTier pricingTier = appServicePlanWrapper.getPricingTier();
+            lblPricingTier.setText(pricingTier == CONSUMPTION_PRICING_TIER ? CONSUMPTION : pricingTier.toString());
         }
     }
 
