@@ -94,12 +94,8 @@ public class SpringCloudDeployConfiguration extends AzureRunConfigurationBase<Sp
         return springCloudModel.isPublic();
     }
 
-    public String getResourceGroup() {
-        return springCloudModel.getResourceGroup();
-    }
-
-    public String getClusterName() {
-        return springCloudModel.getClusterName();
+    public String getClusterId() {
+        return springCloudModel.getClusterId();
     }
 
     public boolean isCreateNewApp() {
@@ -151,12 +147,8 @@ public class SpringCloudDeployConfiguration extends AzureRunConfigurationBase<Sp
         springCloudModel.setSubscriptionId(subscriptionId);
     }
 
-    public void setResourceGroup(String resourceGroup) {
-        springCloudModel.setResourceGroup(resourceGroup);
-    }
-
-    public void setClusterName(String clusterName) {
-        springCloudModel.setClusterName(clusterName);
+    public void setClusterId(String clusterId) {
+        springCloudModel.setClusterId(clusterId);
     }
 
     public void setAppName(String appName) {

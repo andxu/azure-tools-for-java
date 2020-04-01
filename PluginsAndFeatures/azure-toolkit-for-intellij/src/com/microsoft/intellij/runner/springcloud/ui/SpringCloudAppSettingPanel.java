@@ -32,7 +32,7 @@ import com.microsoft.azure.management.appplatform.v2019_05_01_preview.RuntimeVer
 import com.microsoft.azure.management.appplatform.v2019_05_01_preview.implementation.AppResourceInner;
 import com.microsoft.azure.management.appplatform.v2019_05_01_preview.implementation.ServiceResourceInner;
 import com.microsoft.azure.management.resources.Subscription;
-import com.microsoft.azuretools.core.mvp.model.springcloud.IdHelper;
+import com.microsoft.azuretools.core.mvp.model.springcloud.SpringCloudIdHelper;
 import com.microsoft.intellij.common.AzureResourceWrapper;
 import com.microsoft.intellij.common.CommonConst;
 import com.microsoft.intellij.runner.AzureSettingPanel;
@@ -164,7 +164,7 @@ public class SpringCloudAppSettingPanel extends AzureSettingPanel<SpringCloudDep
         publicButtonGroup.add(radioNonPublic);
 
         init();
-        initCluster(configuration.getClusterName());
+        initCluster(SpringCloudIdHelper.getClusterName(configuration.getClusterId()));
         initApp(configuration.getAppName(), configuration.isCreateNewApp());
     }
 
@@ -283,7 +283,7 @@ public class SpringCloudAppSettingPanel extends AzureSettingPanel<SpringCloudDep
                 cbClusters.addItem(cluster);
             }
             first = false;
-            if (Comparing.equal(cluster.name(), configuration.getClusterName())) {
+            if (Comparing.equal(cluster.id(), configuration.getClusterId())) {
                 cbClusters.setSelectedItem(cluster);
             }
         }
@@ -389,14 +389,9 @@ public class SpringCloudAppSettingPanel extends AzureSettingPanel<SpringCloudDep
     protected void apply(@NotNull SpringCloudDeployConfiguration configuration) {
         configuration.setSubscriptionId(getValueFromComboBox(this.cbSubscription, Subscription::subscriptionId, Subscription.class));
 
-        if (cbClusters.getSelectedItem() instanceof String) {
-            configuration.setClusterName((String) cbClusters.getSelectedItem());
-        } else {
-            configuration.setClusterName(getValueFromComboBox(this.cbClusters, ServiceResourceInner::name, ServiceResourceInner.class));
-            ServiceResourceInner cls = (ServiceResourceInner) this.cbClusters.getSelectedItem();
-            if (cls != null) {
-                configuration.setResourceGroup(IdHelper.getResourceGroup(cls.id()));
-            }
+        if (cbClusters.getSelectedItem() instanceof ServiceResourceInner) {
+            configuration.setClusterId(getValueFromComboBox(this.cbClusters, ProxyResource::id,
+                                                ServiceResourceInner.class));
         }
 
         AzureResourceWrapper ar = getValueFromComboBox(this.cbSpringApps, t -> t, AzureResourceWrapper.class);

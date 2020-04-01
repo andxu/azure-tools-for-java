@@ -31,8 +31,7 @@ public class SpringCloudModel {
     // app
     private boolean isPublic;
     private String subscriptionId;
-    private String resourceGroup;
-    private String clusterName;
+    private String clusterId;
     private String appName;
     private String runtimeVersion;
     // deployment
@@ -54,14 +53,6 @@ public class SpringCloudModel {
 
     public String getSubscriptionId() {
         return subscriptionId;
-    }
-
-    public String getResourceGroup() {
-        return resourceGroup;
-    }
-
-    public String getClusterName() {
-        return clusterName;
     }
 
     public String getAppName() {
@@ -92,6 +83,10 @@ public class SpringCloudModel {
         return projectName;
     }
 
+    public String getClusterId() {
+        return clusterId;
+    }
+
     public boolean isEnablePersistentStorage() {
         return enablePersistentStorage;
     }
@@ -106,14 +101,6 @@ public class SpringCloudModel {
 
     public void setSubscriptionId(String subscriptionId) {
         this.subscriptionId = subscriptionId;
-    }
-
-    public void setResourceGroup(String resourceGroup) {
-        this.resourceGroup = resourceGroup;
-    }
-
-    public void setClusterName(String clusterName) {
-        this.clusterName = clusterName;
     }
 
     public void setAppName(String appName) {
@@ -154,5 +141,9 @@ public class SpringCloudModel {
 
     public void setCreateNewApp(boolean createNewApp) {
         isCreateNewApp = createNewApp;
+    }
+
+    public void setClusterId(final String clusterId) {
+        this.clusterId = clusterId;
     }
 }
