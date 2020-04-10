@@ -22,6 +22,7 @@
 
 package com.microsoft.intellij.helpers.springcloud;
 
+import com.baeldung.intellij.stackoverflowplugin.TestScrollTable;
 import com.intellij.openapi.fileEditor.FileEditor;
 import com.intellij.openapi.fileEditor.FileEditorPolicy;
 import com.intellij.openapi.fileEditor.FileEditorProvider;
@@ -44,7 +45,7 @@ public class SpringCloudAppPropertyViewProvider implements FileEditorProvider, D
     @Override
     public FileEditor createEditor(@NotNull Project project, @NotNull VirtualFile virtualFile) {
         final String appId = virtualFile.getUserData(UIHelperImpl.APP_ID);
-        return new SpringCloudAppPropertyView(project, appId);
+        return new TestScrollTable();
     }
 
     @NotNull
