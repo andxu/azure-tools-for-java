@@ -34,7 +34,7 @@ public abstract class HDInsightRootModule extends AzureRefreshableNode {
         super(id, name, parent, iconPath, delayActionLoading);
     }
 
-    public abstract HDInsightRootModule getNewNode(Node parent);
+    public abstract HDInsightRootModule getNewNode (Node parent);
 
     public boolean isFeatureEnabled() {
         return false;
