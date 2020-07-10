@@ -21,7 +21,7 @@
  */
 package com.microsoft.azure.docker;
 
-import com.microsoft.azure.docker.model.*;
+import  com.microsoft.azure.docker.model.*;
 import com.microsoft.azure.docker.ops.AzureDockerCertVaultOps;
 import com.microsoft.azure.docker.ops.utils.AzureDockerUtils;
 import com.microsoft.azure.keyvault.KeyVaultClient;
@@ -60,8 +60,8 @@ public class AzureDockerHostsManager {
     this.dockerPreferredSettings = dockerPreferredSettings;
   }
 
-  public static AzureDockerHostsManager getAzureDockerHostsManager(AzureManager azureAuthManager) throws Exception {
-    if (instance == null || instance.azureAuthManager != azureAuthManager) {
+  public static AzureDockerHostsManager getAzureDockerHostsManager (AzureManager azureAuthManager) throws Exception {
+    if (instance == null || instance.azureAuthManager !=  azureAuthManager) {
       instance = new AzureDockerHostsManager(azureAuthManager);
       isInitialized = false;
     }
